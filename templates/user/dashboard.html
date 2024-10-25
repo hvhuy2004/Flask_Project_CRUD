@@ -1,0 +1,17 @@
+{% extends "user/layout.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row d-flex justify-content-center">
+        <div class="col-xl-4 col-lg-4 col-md-4 my-2 col-sm-12">
+            <a href="/user/dashboard" class="btn btn-info">Dashboard</a>
+        </div>
+        <div class="col-xl-4 col-lg-4 col-md-4 my-2 col-sm-12">
+            <a href="/user/dashboard" class="btn btn-info">Change password</a>
+        </div>
+        <div class="col-xl-4 col-lg-4 col-md-4 my-2 col-sm-12">
+            <a href="/user/logout" class="btn btn-danger">Log out</a>
+        </div>
+    </div>
+</div>
+{% endblock content %}

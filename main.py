@@ -43,9 +43,38 @@ def adminIndex():
 
 # -------------------user area-------------------
 
-# User login
-@app.route('/user/', methods=['POST','GET'])
+# User login 
+@app.route('/user/', methods=['POST', 'GET'])
 def userIndex():
+    if session.get('user_id'):
+        return redirect('/user/dashboard')
+
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+
+        users = User.query.filter_by(email=email).first()
+        if users and bcrypt.check_password_hash(users.password, password):
+            if users.status == 0:
+                flash('Your account is not approved by Admin', 'danger')
+                return redirect('/user/')
+            else:
+                session['user_id'] = users.id
+                session['username'] = users.username
+                flash('Login Successfully', 'success')
+                return redirect('/user/dashboard')
+        else:
+            flash('Invalid Email and Password', 'danger')
+            return redirect('/user/')
+
+    return render_template('user/index.html', title="User Login")
+
+
+
+def userIndex():
+    if session.get('user_id'):
+        return redirect('/user/dashboard')
+    
     if request.method == 'POST':
     
         # get the name of the field
@@ -77,6 +106,8 @@ def userIndex():
 # User register
 @app.route('/user/signup', methods=['POST', 'GET'])
 def userSignup():
+    if session.get('user_id'):
+        return redirect('/user/dashboard')
     if request.method == 'POST':
         # Get all input fields
         fname = request.form.get('fname')
@@ -112,8 +143,19 @@ def userSignup():
 # User dashboard
 @app.route('/user/dashboard')
 def userDashboard():
-    if session.get('username'):
-        return f"{session.get('username')}"
+    if not session.get('user_id'):
+        return redirect('/user/')
+    return render_template('user/dashboard.html', title="User Dashboard")
+
+# User logout
+@app.route('/user/logout')
+def userLogout():
+    if session.get('user_id'):
+        session['user_id'] = None
+        session['username'] = None
+        session.clear()
+        flash('Logout successfully', 'success')
+        return redirect('/user/')
 
 # Route để xem tất cả tài khoản
 @app.route('/admin/users')

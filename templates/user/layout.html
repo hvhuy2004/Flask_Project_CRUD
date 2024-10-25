@@ -16,6 +16,19 @@
 </head>
 
 <body>
+    <div class="container my-5">
+        <div class="d-flex justify-content-center align-items-center">
+            <img style="width: 5%;" src="https://www.svgrepo.com/show/352630/user-cog.svg" alt="">
+            <h1>User Management System</h1>
+        </div>
+        <div class="text-center my-2">
+            {% if session.get('user_id') %}
+            <button class="btn btn-info">{{session.username}}</button>
+            {% endif %}
+        </div>
+        <hr>
+    </div>
+
     {% block content %} {% endblock content %}
 
 </body>
