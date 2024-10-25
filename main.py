@@ -1,12 +1,16 @@
-from flask import Flask, render_template, request, flash, redirect
+from flask import Flask, render_template, request, flash, redirect, session
 from flask_sqlalchemy import SQLAlchemy
+from flask_session import Session
 from flask_bcrypt import Bcrypt
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///ums.sqlite"
 app.config["SECRET_KEY"] = 'c782718b0501dc77c66148d9'
+app.config["SESSION_PARMANENT"]=False
+app.config["SESSION_TYPE"]='filesystem'
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
+Session(app)
 
 # User class
 class User(db.Model):
@@ -40,9 +44,35 @@ def adminIndex():
 # -------------------user area-------------------
 
 # User login
-@app.route('/user/')
+@app.route('/user/', methods=['POST','GET'])
 def userIndex():
-    return render_template('user/index.html', title="User Login")
+    if request.method == 'POST':
+    
+        # get the name of the field
+        email = request.form.get('email')
+        password = request.form.get('password')
+
+        # check user exist in this email or not
+        users = User().query.filter_by(email=email).first()
+        if users and bcrypt.check_password_hash(users.password, password):
+            
+            # check the admin approved your account or not
+            is_approve = User.query.filter_by(id=users.id).first()
+            # first return the is_approve:
+            if is_approve.status ==0:
+                flash('Your account is not approved by Admin', 'danger')
+                return redirect('/user/')
+            else:
+                session['user_id'] = users.id
+                session['username'] = users.username
+                flash('Login Successfully', 'success')
+                return redirect('/user/dashboard')
+        else:
+            flash('Invalid Email and Password', 'danger')
+            return redirect('/user/')
+
+    else:
+        return render_template('user/index.html', title="User Login")
 
 # User register
 @app.route('/user/signup', methods=['POST', 'GET'])
@@ -77,7 +107,13 @@ def userSignup():
 
     else:
         return render_template('user/signup.html', title="User Signup")
-    
+
+
+# User dashboard
+@app.route('/user/dashboard')
+def userDashboard():
+    if session.get('username'):
+        return f"{session.get('username')}"
 
 # Route để xem tất cả tài khoản
 @app.route('/admin/users')
