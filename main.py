@@ -166,30 +166,30 @@ def userChangePassword():
     if not session.get('user_id'):
         return redirect('/user/')
     if request.method == 'POST':
-        email = request.form.get('email')
         old_password = request.form.get('old_password')
         password = request.form.get('password')
         
-        if email == "" or old_password == "" or password == "":
+        if old_password == "" or password == "":
             flash('Please fill all fields', 'danger')
             return redirect('/user/change-password')
         
-        user = User.query.filter_by(email=email).first()
+        user = User.query.get(session['user_id'])  # Lấy người dùng dựa trên user_id trong session
         if user:
             if bcrypt.check_password_hash(user.password, old_password):  # Kiểm tra mật khẩu cũ
                 hash_password = bcrypt.generate_password_hash(password, 10)
-                User.query.filter_by(email=email).update(dict(password=hash_password))
+                user.password = hash_password  # Cập nhật mật khẩu
                 db.session.commit()
                 flash('Password changed successfully', 'success')
-                return redirect('/user/dashboard')
+                return redirect('/user/dashboard')  # Chuyển hướng đến dashboard
             else:
                 flash('Invalid old password', 'danger')
                 return redirect('/user/change-password')
         else:
-            flash('Invalid email', 'danger')
+            flash('User not found', 'danger')
             return redirect('/user/change-password')
     else:
         return render_template('user/change-password.html', title="Change Password")
+
 
 
 # Route để xem tất cả tài khoản
