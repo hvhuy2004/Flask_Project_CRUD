@@ -150,12 +150,47 @@ def userDashboard():
 # User logout
 @app.route('/user/logout')
 def userLogout():
+    if not session.get('user_id'):
+        return redirect('/user/')
+
     if session.get('user_id'):
         session['user_id'] = None
         session['username'] = None
         session.clear()
         flash('Logout successfully', 'success')
         return redirect('/user/')
+    
+
+@app.route('/user/change-password', methods=["POST", "GET"])
+def userChangePassword():
+    if not session.get('user_id'):
+        return redirect('/user/')
+    if request.method == 'POST':
+        email = request.form.get('email')
+        old_password = request.form.get('old_password')
+        password = request.form.get('password')
+        
+        if email == "" or old_password == "" or password == "":
+            flash('Please fill all fields', 'danger')
+            return redirect('/user/change-password')
+        
+        user = User.query.filter_by(email=email).first()
+        if user:
+            if bcrypt.check_password_hash(user.password, old_password):  # Kiểm tra mật khẩu cũ
+                hash_password = bcrypt.generate_password_hash(password, 10)
+                User.query.filter_by(email=email).update(dict(password=hash_password))
+                db.session.commit()
+                flash('Password changed successfully', 'success')
+                return redirect('/user/dashboard')
+            else:
+                flash('Invalid old password', 'danger')
+                return redirect('/user/change-password')
+        else:
+            flash('Invalid email', 'danger')
+            return redirect('/user/change-password')
+    else:
+        return render_template('user/change-password.html', title="Change Password")
+
 
 # Route để xem tất cả tài khoản
 @app.route('/admin/users')
