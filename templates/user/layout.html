@@ -23,7 +23,7 @@
         </div>
         <div class="text-center my-2">
             {% if session.get('user_id') %}
-            <button class="btn btn-info">{{session.username}}</button>
+            <a href="/user/dashboard" class="btn btn-info">{{session.username}}</a>
             {% endif %}
         </div>
         <hr>
