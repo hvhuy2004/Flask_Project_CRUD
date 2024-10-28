@@ -50,10 +50,10 @@ def userIndex():
         return redirect('/user/dashboard')
 
     if request.method == 'POST':
-        email = request.form.get('email')
+        username = request.form.get('username')
         password = request.form.get('password')
 
-        users = User.query.filter_by(email=email).first()
+        users = User.query.filter_by(username=username).first()
         if users and bcrypt.check_password_hash(users.password, password):
             if users.status == 0:
                 flash('Your account is not approved by Admin', 'danger')
@@ -64,7 +64,7 @@ def userIndex():
                 flash('Login Successfully', 'success')
                 return redirect('/user/dashboard')
         else:
-            flash('Invalid Email and Password', 'danger')
+            flash('Invalid Username and Password', 'danger')
             return redirect('/user/')
 
     return render_template('user/index.html', title="User Login")
@@ -145,7 +145,10 @@ def userSignup():
 def userDashboard():
     if not session.get('user_id'):
         return redirect('/user/')
-    return render_template('user/dashboard.html', title="User Dashboard")
+    if session.get('user_id'):
+        id = session.get('user_id')
+    users = User.query.filter_by(id=id).first()
+    return render_template('user/dashboard.html', title="User Dashboard", users = users)
 
 # User logout
 @app.route('/user/logout')
@@ -190,6 +193,33 @@ def userChangePassword():
     else:
         return render_template('user/change-password.html', title="Change Password")
 
+
+# user update profile
+@app.route('/user/update-profile', methods=['POST', 'GET'])
+def userUpdateProfile():
+    if not session.get('user_id'):
+        return redirect('/user/')
+    if session.get('user_id'):
+        id=session.get('user_id')
+    users = User.query.get(id)
+    if request.method == 'POST':
+        # Get all input fields
+        fname = request.form.get('fname')
+        lname = request.form.get('lname')
+        email = request.form.get('email')
+        username = request.form.get('username')
+        edu = request.form.get('edu')
+        # Check if all fields are filled
+        if not all([fname, lname, email, username, edu]):
+            flash('Please fill all the fields', 'danger')
+            return redirect('/user/update-profile')
+        else:
+            User.query.filter_by(id=id).update(dict(fname=fname, lname=lname, email=email, edu=edu, username=username))
+            db.session.commit()
+            flash('Profile updated successfully', 'success')
+            return redirect('/user/update-profile')
+    else:
+        return render_template('user/update-profile.html', title="Update Profile", users = users)
 
 
 # Route để xem tất cả tài khoản

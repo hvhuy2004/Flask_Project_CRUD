@@ -1,0 +1,58 @@
+{% extends "user/layout.html" %}
+
+{% block content %}
+<div class="container">
+    <h2 class="text-center my-3">
+        User Profile Update
+    </h2>
+    <div class="row d-flex justify-content-center">
+        <div class="col-xl-5 col-lg-5 col-md-6 col-sm-12">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{category}}">
+                <strong>{{message}}</strong>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+            <div class="card">
+                <div class="card-body">
+                    <form action="" method="post">
+                        <div class="my-2">
+                            <label for=""><b>First name</b></label>
+                            <input type="text" value="{{users.fname}}" name="fname" id="fname"
+                                class="form-control my-1">
+                        </div>
+
+                        <div class="my-2">
+                            <label for=""><b>Last name</b></label>
+                            <input type="text" value="{{users.lname}}" name="lname" id="lname"
+                                class="form-control my-1">
+                        </div>
+
+                        <div class="my-2">
+                            <label for=""><b>Username</b></label>
+                            <input type="text" value="{{users.username}}" name="username" id="username"
+                                class="form-control my-1" readonly>
+                        </div>
+
+                        <div class="my-2">
+                            <label for=""><b>Email</b></label>
+                            <input type="email" value="{{users.email}}" name="email" id="email"
+                                class="form-control my-1">
+                        </div>
+
+                        <div class="my-2">
+                            <label for=""><b>Education</b></label>
+                            <input type="text" value="{{users.edu}}" name="edu" id="edu" class="form-control my-1">
+                        </div>
+
+                        <button class="btn btn-success">Update profile</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
