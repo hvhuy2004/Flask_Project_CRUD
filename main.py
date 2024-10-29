@@ -18,13 +18,30 @@ class User(db.Model):
     fname = db.Column(db.String(255), nullable=False)
     lname = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(255), nullable=False)
+    student_code = db.Column(db.String(50), nullable=True)  
+    birth_year = db.Column(db.Integer, nullable=True)       
     username = db.Column(db.String(255), nullable=False)
-    edu = db.Column(db.String(255), nullable=False)
     password = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(50), default='user', nullable=False)  # Thêm cột role
     status = db.Column(db.Integer, default=0, nullable=False)
+    id_class = db.Column(db.Integer, db.ForeignKey('class.id_class'), nullable=True)
 
     def __repr__(self):
-        return f'User("{self.id}", "{self.fname}", "{self.lname}", "{self.email}", "{self.edu}", "{self.username}", "{self.status}")'
+        return f'User("{self.id}", "{self.fname}", "{self.lname}", "{self.email}", "{self.username}", "{self.role}", "{self.status}", "{self.student_code}", "{self.birth_year}")'
+
+# Class class
+class Class(db.Model):
+    id_class = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    id_subject = db.Column(db.Integer, db.ForeignKey('subject.id_subject'), nullable=True)
+    id_user = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+
+# Subject class
+class Subject(db.Model):
+    id_subject = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    id_class = db.Column(db.Integer, db.ForeignKey('class.id_class'), nullable=True)
+
 
 # Tạo bảng trong cơ sở dữ liệu
 with app.app_context():
@@ -112,25 +129,26 @@ def userSignup():
         # Get all input fields
         fname = request.form.get('fname')
         lname = request.form.get('lname')
+        birth_year = request.form.get('birth_year')
+        student_code = request.form.get('student_code')
         email = request.form.get('email')
         username = request.form.get('username')
-        edu = request.form.get('edu')
         password = request.form.get('password')
 
         # Check if all fields are filled
-        if not all([fname, lname, email, password, username, edu]):
+        if not all([fname, lname, email, password, username, birth_year, student_code]):
             flash('Please fill all the fields', 'danger')
             return redirect('/user/signup')
         else:
             # Check if the email already exists
-            is_email = User.query.filter_by(email=email).first()
-            if is_email:
-                flash('Email already exists', 'danger')
+            is_username = User.query.filter_by(username=username).first()
+            if is_username:
+                flash('Username already exists', 'danger')
                 return redirect('/user/signup')
             else:
                 # Hash the password and create a new user
                 hash_password = bcrypt.generate_password_hash(password, 10).decode('utf-8')
-                user = User(fname=fname, lname=lname, email=email, password=hash_password, edu=edu, username=username)
+                user = User(fname=fname, lname=lname, email=email,birth_year=birth_year, student_code = student_code, password=hash_password, username=username)
                 db.session.add(user)
                 db.session.commit()
                 flash('Account created successfully! Admin will approve your account.', 'success')
@@ -145,10 +163,15 @@ def userSignup():
 def userDashboard():
     if not session.get('user_id'):
         return redirect('/user/')
-    if session.get('user_id'):
-        id = session.get('user_id')
-    users = User.query.filter_by(id=id).first()
-    return render_template('user/dashboard.html', title="User Dashboard", users = users)
+    
+    user = User.query.get(session.get('user_id'))
+    
+    # Kiểm tra nếu role là "user"
+    if user.role != "user":
+        flash("Access denied: You are not authorized to access this page.", "danger")
+        return redirect('/user/')
+    
+    return render_template('user/dashboard.html', title="User Dashboard", users=user)
 
 # User logout
 @app.route('/user/logout')
@@ -168,6 +191,14 @@ def userLogout():
 def userChangePassword():
     if not session.get('user_id'):
         return redirect('/user/')
+    
+    user = User.query.get(session.get('user_id'))
+    
+    # Kiểm tra nếu role là "user"
+    if user.role != "user":
+        flash("Access denied: You are not authorized to access this page.", "danger")
+        return redirect('/user/')
+    
     if request.method == 'POST':
         old_password = request.form.get('old_password')
         password = request.form.get('password')
@@ -176,50 +207,56 @@ def userChangePassword():
             flash('Please fill all fields', 'danger')
             return redirect('/user/change-password')
         
-        user = User.query.get(session['user_id'])  # Lấy người dùng dựa trên user_id trong session
-        if user:
-            if bcrypt.check_password_hash(user.password, old_password):  # Kiểm tra mật khẩu cũ
-                hash_password = bcrypt.generate_password_hash(password, 10)
-                user.password = hash_password  # Cập nhật mật khẩu
-                db.session.commit()
-                flash('Password changed successfully', 'success')
-                return redirect('/user/dashboard')  # Chuyển hướng đến dashboard
-            else:
-                flash('Invalid old password', 'danger')
-                return redirect('/user/change-password')
+        if bcrypt.check_password_hash(user.password, old_password):  # Kiểm tra mật khẩu cũ
+            hash_password = bcrypt.generate_password_hash(password, 10)
+            user.password = hash_password  # Cập nhật mật khẩu
+            db.session.commit()
+            flash('Password changed successfully', 'success')
+            return redirect('/user/dashboard')  # Chuyển hướng đến dashboard
         else:
-            flash('User not found', 'danger')
+            flash('Invalid old password', 'danger')
             return redirect('/user/change-password')
     else:
         return render_template('user/change-password.html', title="Change Password")
 
 
-# user update profile
 @app.route('/user/update-profile', methods=['POST', 'GET'])
 def userUpdateProfile():
     if not session.get('user_id'):
         return redirect('/user/')
-    if session.get('user_id'):
-        id=session.get('user_id')
-    users = User.query.get(id)
+    
+    user = User.query.get(session.get('user_id'))
+    
+    # Kiểm tra nếu role là "user"
+    if user.role != "user":
+        flash("Access denied: You are not authorized to access this page.", "danger")
+        return redirect('/user/')
+    
     if request.method == 'POST':
         # Get all input fields
         fname = request.form.get('fname')
         lname = request.form.get('lname')
         email = request.form.get('email')
+        birth_year = request.form.get('birth_year')
+        student_code = request.form.get('student_code')
         username = request.form.get('username')
-        edu = request.form.get('edu')
         # Check if all fields are filled
-        if not all([fname, lname, email, username, edu]):
+        if not all([fname, lname, email, username]):
             flash('Please fill all the fields', 'danger')
             return redirect('/user/update-profile')
         else:
-            User.query.filter_by(id=id).update(dict(fname=fname, lname=lname, email=email, edu=edu, username=username))
+            User.query.filter_by(id=user.id).update(dict(fname=fname, lname=lname, email=email, username=username, birth_year=birth_year, student_code=student_code))
             db.session.commit()
             flash('Profile updated successfully', 'success')
             return redirect('/user/update-profile')
     else:
-        return render_template('user/update-profile.html', title="Update Profile", users = users)
+        return render_template('user/update-profile.html', title="Update Profile", users=user)
+
+
+# -------------------admin area-------------------
+
+
+
 
 
 # Route để xem tất cả tài khoản
@@ -228,6 +265,10 @@ def view_users():
     users = User.query.all()  # Lấy tất cả người dùng từ cơ sở dữ liệu
     return render_template('admin/view_users.html', users=users, title="View Users")
 
+
+@app.route('/admin/dashboard')
+def adminDashboard():
+    return render_template('admin/dashboard.html', title="Admin Dashboard")
 
 if __name__ == '__main__':
     app.run(debug=True)

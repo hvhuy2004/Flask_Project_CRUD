@@ -32,6 +32,18 @@
                         </div>
 
                         <div class="my-2">
+                            <label for=""><b>Birth year</b></label>
+                            <input type="number" value="{{users.birth_year}}" name="birth_year" id="birth_year"
+                                class="form-control my-1">
+                        </div>
+
+                        <div class="my-2">
+                            <label for=""><b>Student code</b></label>
+                            <input type="text" value="{{users.student_code}}" name="student_code" id="student_code"
+                                class="form-control my-1" readonly>
+                        </div>
+
+                        <div class="my-2">
                             <label for=""><b>Username</b></label>
                             <input type="text" value="{{users.username}}" name="username" id="username"
                                 class="form-control my-1" readonly>
@@ -43,10 +55,6 @@
                                 class="form-control my-1">
                         </div>
 
-                        <div class="my-2">
-                            <label for=""><b>Education</b></label>
-                            <input type="text" value="{{users.edu}}" name="edu" id="edu" class="form-control my-1">
-                        </div>
 
                         <button class="btn btn-success">Update profile</button>
                     </form>
