@@ -53,10 +53,10 @@ with app.app_context():
 def index():
     return render_template('index.html', title="")
 
-# Admin login
-@app.route('/admin/')
-def adminIndex():
-    return render_template('admin/index.html', title="Admin Login")
+# # Admin login
+# @app.route('/admin/')
+# def adminIndex():
+#     return render_template('admin/index.html', title="Admin Login")
 
 # -------------------user area-------------------
 
@@ -87,38 +87,6 @@ def userIndex():
     return render_template('user/index.html', title="User Login")
 
 
-
-def userIndex():
-    if session.get('user_id'):
-        return redirect('/user/dashboard')
-    
-    if request.method == 'POST':
-    
-        # get the name of the field
-        email = request.form.get('email')
-        password = request.form.get('password')
-
-        # check user exist in this email or not
-        users = User().query.filter_by(email=email).first()
-        if users and bcrypt.check_password_hash(users.password, password):
-            
-            # check the admin approved your account or not
-            is_approve = User.query.filter_by(id=users.id).first()
-            # first return the is_approve:
-            if is_approve.status ==0:
-                flash('Your account is not approved by Admin', 'danger')
-                return redirect('/user/')
-            else:
-                session['user_id'] = users.id
-                session['username'] = users.username
-                flash('Login Successfully', 'success')
-                return redirect('/user/dashboard')
-        else:
-            flash('Invalid Email and Password', 'danger')
-            return redirect('/user/')
-
-    else:
-        return render_template('user/index.html', title="User Login")
 
 # User register
 @app.route('/user/signup', methods=['POST', 'GET'])
@@ -255,8 +223,58 @@ def userUpdateProfile():
 
 # -------------------admin area-------------------
 
+# Admin login 
+@app.route('/admin/', methods=['POST', 'GET'])
+def adminIndex():
+    # Nếu người dùng đã đăng nhập và có quyền admin
+    if session.get('user_id') and session.get('role') == 'admin':
+        return redirect('/admin/dashboard')
+
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        admin_user = User.query.filter_by(username=username).first()
+        if admin_user and bcrypt.check_password_hash(admin_user.password, password):
+            if admin_user.role != 'admin':
+                flash('Access denied: Admin privileges required.', 'danger')
+                return redirect('/admin/')
+            elif admin_user.status == 0:
+                flash('Your admin account is not approved.', 'danger')
+                return redirect('/admin/')
+            else:
+                session['user_id'] = admin_user.id
+                session['username'] = admin_user.username
+                session['role'] = admin_user.role
+                flash('Admin login successful', 'success')
+                return redirect('/admin/dashboard')
+        else:
+            flash('Invalid Username and Password', 'danger')
+            return redirect('/admin/')
+
+    return render_template('admin/index.html', title="Admin Login")
 
 
+@app.route('/admin/dashboard')
+def adminDashboard():
+    # Kiểm tra xem người dùng có đang đăng nhập và có quyền admin hay không
+    if not session.get('user_id') or session.get('role') != 'admin':
+        return redirect('/admin/')  # Chuyển hướng đến trang đăng nhập admin nếu không đúng
+    users = User.query.all()
+    return render_template('admin/dashboard.html', title="Admin Dashboard", users=users)
+
+# Admin logout
+@app.route('/admin/logout')
+def adminLogout():
+    if not session.get('user_id'):
+        return redirect('/admin/')
+
+    if session.get('user_id'):
+        session['user_id'] = None
+        session['username'] = None
+        session.clear()
+        flash('Logout successfully', 'success')
+        return redirect('/admin/')
 
 
 # Route để xem tất cả tài khoản
@@ -266,9 +284,6 @@ def view_users():
     return render_template('admin/view_users.html', users=users, title="View Users")
 
 
-@app.route('/admin/dashboard')
-def adminDashboard():
-    return render_template('admin/dashboard.html', title="Admin Dashboard")
 
 if __name__ == '__main__':
     app.run(debug=True)

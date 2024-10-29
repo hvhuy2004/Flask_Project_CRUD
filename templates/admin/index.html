@@ -1,5 +1,41 @@
-{% extends "admin/layout.html" %}
+{% extends "user/layout.html" %}
 
 {% block content %}
-<h1>index admin file</h1>
+<div class="container">
+    <h1 class="text-center my-3">
+        Admin Login
+    </h1>
+    <div class="row d-flex justify-content-center">
+        <div class="col-xl-5 col-lg-5 col-md-6 col-sm-12">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{category}}">
+                <strong>{{message}}</strong>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+            <div class="card">
+                <div class="card-body">
+                    <form action="" method="post">
+
+                        <div class="my-2">
+                            <label for=""><b>Enter your username</b></label>
+                            <input type="text" name="username" id="username" class="form-control my-1">
+                        </div>
+
+                        <div class="my-2">
+                            <label for=""><b>Enter your password</b></label>
+                            <input type="password" name="password" id="password" class="form-control my-1">
+                        </div>
+                        <button class="btn btn-success">Log in</button>
+                        <span class="d-flex align-items-center">If you have no account<a href="/user/signup"
+                                class="text-center nav-link">Sign up</a></span>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock content %}
