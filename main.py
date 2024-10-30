@@ -60,7 +60,7 @@ def index():
 
 # -------------------user area-------------------
 
-# User login 
+# User login
 @app.route('/user/', methods=['POST', 'GET'])
 def userIndex():
     if session.get('user_id'):
@@ -75,6 +75,9 @@ def userIndex():
             if users.status == 0:
                 flash('Your account is not approved by Admin', 'danger')
                 return redirect('/user/')
+            elif users.role != 'user':
+                flash('You do not have permission to log in', 'danger')
+                return redirect('/user/')
             else:
                 session['user_id'] = users.id
                 session['username'] = users.username
@@ -85,6 +88,7 @@ def userIndex():
             return redirect('/user/')
 
     return render_template('user/index.html', title="User Login")
+
 
 
 
@@ -110,8 +114,12 @@ def userSignup():
         else:
             # Check if the email already exists
             is_username = User.query.filter_by(username=username).first()
+            is_studentcode = User.query.filter_by(student_code=student_code).first()
             if is_username:
                 flash('Username already exists', 'danger')
+                return redirect('/user/signup')
+            elif is_studentcode:
+                flash('Student code already exists', 'danger')
                 return redirect('/user/signup')
             else:
                 # Hash the password and create a new user
