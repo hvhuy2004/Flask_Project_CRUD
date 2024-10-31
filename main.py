@@ -300,6 +300,14 @@ def approveUser(id):
     flash('Approved successfully', 'success')
     return redirect('/admin/get-all-user')
 
+# Admin unapprove user
+@app.route('/admin/unapprove-user/<int:id>')
+def unapproveUser(id):
+    User.query.filter_by(role='user').filter_by(id=id).update(dict(status=0))
+    db.session.commit()
+    flash('Unapproved successfully', 'success')
+    return redirect('/admin/get-all-user')
+
 
 
 if __name__ == '__main__':

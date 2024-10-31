@@ -38,7 +38,9 @@
                         <td>{{user.email}}</td>
                         <td class="text-center">
                             {% if user.status ==1%}
-                            <span class="fw-bold text-success">Approved</span>
+                            <a href="/admin/unapprove-user/{{user.id}}">
+                                <button class="btn btn-success">Approved</button>
+                            </a>
                             {% else %}
                             <a href="/admin/approve-user/{{user.id}}">
                                 <button class="btn btn-warning">Approve</button>
