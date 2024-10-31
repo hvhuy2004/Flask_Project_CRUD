@@ -1,0 +1,55 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="container">
+    {% include "admin/navbar.html" %}
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <div class="alert alert-success">
+        <strong> {{ messages[0] }}</strong>
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="my-2">
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>Birth Year</th>
+                        <th>Student Code</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{user.id}}</td>
+                        <td>{{user.fname}}</td>
+                        <td>{{user.lname}}</td>
+                        <td>{{user.birth_year}}</td>
+                        <td>{{user.student_code}}</td>
+                        <td>{{user.username}}</td>
+                        <td>{{user.email}}</td>
+                        <td class="text-center">
+                            {% if user.status ==1%}
+                            <span class="fw-bold text-success">Approved</span>
+                            {% else %}
+                            <a href="/admin/approve-user/{{user.id}}">
+                                <button class="btn btn-warning">Approve</button>
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock content %}

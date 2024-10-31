@@ -285,11 +285,20 @@ def adminLogout():
         return redirect('/admin/')
 
 
-# Route để xem tất cả tài khoản
-@app.route('/admin/users')
-def view_users():
-    users = User.query.all()  # Lấy tất cả người dùng từ cơ sở dữ liệu
-    return render_template('admin/view_users.html', users=users, title="View Users")
+# Admin get all user
+@app.route('/admin/get-all-user', methods=['GET', 'POST'])
+def adminGetAllUser():
+    users = User.query.filter_by(role='user').all()
+    return render_template('admin/all-user.html', title="Approve User", users = users)
+
+
+# Admin approve user
+@app.route('/admin/approve-user/<int:id>')
+def approveUser(id):
+    User.query.filter_by(role='user').filter_by(id=id).update(dict(status=1))
+    db.session.commit()
+    flash('Approved successfully', 'success')
+    return redirect('/admin/get-all-user')
 
 
 
