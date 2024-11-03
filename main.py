@@ -308,6 +308,31 @@ def unapproveUser(id):
     flash('Unapproved successfully', 'success')
     return redirect('/admin/get-all-user')
 
+# Admin change pasword
+@app.route('/admin/change-admin-password', methods=["GET", "POST"])
+def change_admin_password():
+    if not session.get("user_id"):
+        return redirect("/admin")
+    admin = User.query.get(session.get("user_id"))
+    if request.method == "GET":
+        return render_template('admin/change-password.html', title="Admin Dashboard", users = admin)
+    else:
+        old_password = request.form.get('old_password')
+        password = request.form.get('password')
+        
+        if old_password == "" or password == "":
+            flash('Please fill all fields', 'danger')
+            return redirect('/user/change-password')
+        
+        if bcrypt.check_password_hash(admin.password, old_password):  # Kiểm tra mật khẩu cũ
+            hash_password = bcrypt.generate_password_hash(password, 10)
+            admin.password = hash_password  # Cập nhật mật khẩu
+            db.session.commit()
+            flash('Password changed successfully', 'success')
+            return redirect('/admin/dashboard')  # Chuyển hướng đến dashboard
+        else:
+            flash('Invalid old password', 'danger')
+            return redirect('/admin/change-password')
 
 
 if __name__ == '__main__':
