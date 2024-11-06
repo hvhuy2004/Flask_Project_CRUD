@@ -442,7 +442,7 @@ def add_student_to_class():
                 db.session.add(new_entry)
                 db.session.commit()
                 flash('Student added to class successfully.', 'success')
-                return redirect(f'/admin/class?id={class_id}', class_name = class_info.name)
+                return redirect(f'/admin/class?id={class_id}')
 
     # Lấy danh sách sinh viên có status = 1 và chưa có trong lớp
     students_in_class = db.session.query(Student_Class.user_id).filter_by(class_id=class_id).all()
