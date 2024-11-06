@@ -1,0 +1,55 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="container">
+    {% include "admin/navbar.html" %}
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <div class="alert alert-success">
+        <strong> {{ messages[0] }}</strong>
+    </div>
+    {% endif %}
+    {% endwith %}
+    <div class="d-flex justify-content-between align-items-center my-2">
+        <h2>Class List</h2>
+        <a href="/admin/class/students/add?class_id= {{ class_id }} " class="btn btn-primary">Add Student</a>
+    </div>
+
+    <div class="my-2">
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>Birth Year</th>
+                        <th>Student Code</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for user, relative_id in users %}
+                    <tr>
+                        <td>{{user.id}}</td>
+                        <td>{{user.fname}}</td>
+                        <td>{{user.lname}}</td>
+                        <td>{{user.birth_year}}</td>
+                        <td>{{user.student_code}}</td>
+                        <td>{{user.username}}</td>
+                        <td>{{user.email}}</td>
+                        <td class="text-center">
+                            <a href="/admin/students/remove?id={{relative_id}}">
+                                <button class="btn btn-danger">Remove</button>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock content %}

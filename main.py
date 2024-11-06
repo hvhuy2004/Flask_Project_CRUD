@@ -41,8 +41,11 @@ class Subject(db.Model):
     id_subject = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
     id_class = db.Column(db.Integer, db.ForeignKey('class.id_class'), nullable=True)
-
-
+# Quan hệ class và student:
+class Student_Class(db.Model):
+    id = db.Column(db.Integer, primary_key = True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    class_id = db.Column(db.Integer, db.ForeignKey('class.id_class'), nullable=True)
 # Tạo bảng trong cơ sở dữ liệu
 with app.app_context():
     db.create_all()
@@ -333,6 +336,96 @@ def change_admin_password():
         else:
             flash('Invalid old password', 'danger')
             return redirect('/admin/change-password')
+
+# Admin all class
+@app.route('/admin/class/all')
+def get_all_class():
+    if not session.get('user_id') and session.get('role') == 'admin':
+        return redirect('/admin')
+    classes = Class.query.join(Subject, Class.id_subject == Subject.id_subject).add_column(Subject.name.label("subject_name")).all()
+
+    return render_template("/admin/all-class.html", title="All Class", classes = classes)
+    
+# Admin all subject
+@app.route('/admin/subject/all')
+def get_all_subject():
+    if not session.get('user_id') and session.get('role') == 'admin':
+        return redirect('/admin')
+    subjects = Subject.query.all()
+    return render_template("/admin/all-subject.html", title="All Subject", subjects = subjects)
+
+
+# Thêm class
+@app.route('/admin/class/add', methods = ["POST", "GET"])
+def add_class():
+    subjects = Subject.query.all()
+    if not session.get('user_id') and session.get('role') == 'admin':
+        return redirect('/admin')
+    if request.method == "GET":
+        return render_template("/admin/add-class.html", title="Add Class", subjects = subjects)
+    else:
+        class_name = request.form.get('class_name')
+        subject_id = request.form.get('subject_id')
+        if class_name == "" or subject_id == "":
+            flash('please fill all fields')
+            return redirect('admin/class/add')
+        else:
+            nclass = Class(name = class_name, id_subject = subject_id)
+            db.session.add(nclass)
+            db.session.commit()
+            flash('Create class success')
+            return redirect('/admin/class/all')
+#Thêm subject
+@app.route("/admin/subject/add", methods = ["GET", "POST"])
+def add_subject():
+    if not session.get('user_id') and session.get('role') == 'admin':
+        return redirect('/admin')
+    if request.method == "GET":
+        return render_template("/admin/add-subject.html", title="Add Subject")
+    else:
+        class_name = request.form.get('class_name')
+        if class_name == "":
+            flash('please fill all fields')
+            return redirect('/admin/subject/add')
+        else:
+            nclass = Subject(name = class_name)
+            db.session.add(nclass)
+            db.session.commit()
+            flash('Create class success')
+            return redirect('/admin/subject/all')
+@app.route('/admin/class')
+def get_students_in_class():
+    if not session.get('user_id') and session.get('role') == 'admin':
+        return redirect('/admin')
+    id = request.args.get('id', type=int)
+    print(id)
+    if id is None:
+        flash("class_id is required")
+        return redirect("/admin/class/all")
+    students = db.session.query(User).join(Student_Class, User.id == Student_Class.user_id).filter(Student_Class.class_id == id).add_column(Student_Class.id.label("relative_id")).all()
+    print(students)
+    return render_template("/admin/class's_student.html", class_id = id, users = students)
+
+@app.route('/admin/class/students/add', methods = ['POST', 'GET'])
+def add_student_in_class():
+    if not session.get('user_id') and session.get('role') == 'admin':
+        return redirect('/admin')
+    class_id = request.args.get('class_id')
+    print(class_id)
+    users = User.query.all()
+    if request.method == "GET":
+        return render_template("/admin/add_student.html", students = users) 
+    user_id = request.form.get('student_id')
+    student_class = Student_Class(class_id = class_id, user_id = user_id)
+    if class_id == "":
+        flash('please fill all fields')
+        return redirect(f'/admin/class/students/add?class_id={class_id}')
+    else:
+        db.session.add(student_class)
+        db.session.commit()
+        return redirect(f"/admin/class?id={class_id}")
+    
+    
 
 
 if __name__ == '__main__':
