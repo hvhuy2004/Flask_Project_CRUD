@@ -23,22 +23,20 @@
                     <tr>
                         <th>Id</th>
                         <th>Name</th>
+                        <th>Classes</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for subject in subjects %}
                     <tr>
-                        <td>{{subject.id_class}}</td>
+                        <td>{{subject.id_subject}}</td>
                         <td>{{subject.name}}</td>
                         <td>{{subject.subject}}</td>
-                        <td class="text-center">
-                            
-                        </td>
                     </tr>
                     {%endfor%}
                 </tbody>
 
-                
+
             </table>
         </div>
     </div>

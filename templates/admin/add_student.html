@@ -20,11 +20,11 @@
                     <select name="student_id" class="form-control" required>
                         <option value="" disabled selected>Select a student</option>
                         {% for student in students %}
-                        <option value="{{ student.id }}">{{ student.fname }}</option>
+                        <option value="{{ student.id }}">{{ student.fname }} {{ student.lname }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <button type="submit" class="btn btn-success d-block mx-auto" style="width: 50%;">Add Subject</button>
+                <button type="submit" class="btn btn-success d-block mx-auto" style="width: 50%;">Add Student</button>
             </form>
         </div>
     </div>

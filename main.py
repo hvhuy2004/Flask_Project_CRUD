@@ -375,6 +375,8 @@ def add_class():
             db.session.commit()
             flash('Create class success')
             return redirect('/admin/class/all')
+        
+
 #Thêm subject
 @app.route("/admin/subject/add", methods = ["GET", "POST"])
 def add_subject():
@@ -393,38 +395,86 @@ def add_subject():
             db.session.commit()
             flash('Create class success')
             return redirect('/admin/subject/all')
+        
+
 @app.route('/admin/class')
 def get_students_in_class():
     if not session.get('user_id') and session.get('role') == 'admin':
         return redirect('/admin')
     id = request.args.get('id', type=int)
     print(id)
+
+    # Lấy thông tin lớp từ bảng Class
+    class_info = Class.query.get(id)
+
     if id is None:
         flash("class_id is required")
         return redirect("/admin/class/all")
     students = db.session.query(User).join(Student_Class, User.id == Student_Class.user_id).filter(Student_Class.class_id == id).add_column(Student_Class.id.label("relative_id")).all()
     print(students)
-    return render_template("/admin/class's_student.html", class_id = id, users = students)
+    return render_template("/admin/class's_student.html", class_id = id, class_name = class_info.name,  users = students)
 
-@app.route('/admin/class/students/add', methods = ['POST', 'GET'])
-def add_student_in_class():
-    if not session.get('user_id') and session.get('role') == 'admin':
+
+
+@app.route('/admin/class/students/add', methods=['GET', 'POST'])
+def add_student_to_class():
+    # Kiểm tra nếu người dùng chưa đăng nhập hoặc không phải là admin
+    if not session.get('user_id') or session.get('role') != 'admin':
         return redirect('/admin')
-    class_id = request.args.get('class_id')
-    print(class_id)
-    users = User.query.all()
-    if request.method == "GET":
-        return render_template("/admin/add_student.html", students = users) 
-    user_id = request.form.get('student_id')
-    student_class = Student_Class(class_id = class_id, user_id = user_id)
-    if class_id == "":
-        flash('please fill all fields')
-        return redirect(f'/admin/class/students/add?class_id={class_id}')
-    else:
-        db.session.add(student_class)
-        db.session.commit()
-        return redirect(f"/admin/class?id={class_id}")
+
+    # Lấy class_id từ URL
+    class_id = request.args.get('class_id', type=int)
+
     
+    # Lấy thông tin lớp từ bảng Class
+    class_info = Class.query.get(class_id)
+
+    # Nếu là yêu cầu POST
+    if request.method == 'POST':
+        student_id = request.form.get('student_id')
+
+        if student_id:
+            # Kiểm tra nếu sinh viên tồn tại
+            student = User.query.get(student_id)
+            if student:
+                # Thêm sinh viên vào lớp
+                new_entry = Student_Class(user_id=student.id, class_id=class_id)
+                db.session.add(new_entry)
+                db.session.commit()
+                flash('Student added to class successfully.', 'success')
+                return redirect(f'/admin/class?id={class_id}', class_name = class_info.name)
+
+    # Lấy danh sách sinh viên có status = 1 và chưa có trong lớp
+    students_in_class = db.session.query(Student_Class.user_id).filter_by(class_id=class_id).all()
+    student_ids_in_class = [student[0] for student in students_in_class]
+
+    # Lọc danh sách sinh viên có status = 1 và chưa có trong lớp
+    students = User.query.filter(User.status == 1, User.role == 'user', User.id.notin_(student_ids_in_class)).all()
+
+    return render_template('admin/add_student.html', students=students, class_id=class_id )
+
+    
+
+# Xóa user khỏi lớp 
+@app.route('/admin/students/remove', methods=['GET'])
+def remove_student_from_class():
+    relative_id = request.args.get('id', type=int)
+
+    if not session.get('user_id') or session.get('role') != 'admin':
+        return redirect('/admin')
+
+    if relative_id:
+        student_class = Student_Class.query.get(relative_id)
+        if student_class:
+            db.session.delete(student_class)
+            db.session.commit()
+            flash('Student removed from class successfully.', 'success')
+        else:
+            flash('Student not found in the class.', 'danger')
+
+    class_id = request.args.get('class_id', type=int)
+    return redirect(f'/admin/class?id={class_id}')
+
     
 
 
