@@ -230,6 +230,33 @@ def userUpdateProfile():
             return redirect('/user/update-profile')
     else:
         return render_template('user/update-profile.html', title="Update Profile", users=user)
+    
+# người dùng xem lớp của mình
+@app.route('/user/classes/<int:user_id>', methods=['GET'])
+def user_classes(user_id):
+    # Lấy thông tin người dùng
+    user = User.query.get_or_404(user_id)
+    
+    # Lấy danh sách các lớp người dùng tham gia, bao gồm cả tên môn học
+    classes = db.session.query(Class, Subject.name.label('subject_name')) \
+        .join(Subject, Class.id_subject == Subject.id_subject) \
+        .join(Student_Class, Student_Class.class_id == Class.id_class) \
+        .filter(Student_Class.user_id == user_id).all()
+    
+    # Trả về template với thông tin các lớp và môn học
+    return render_template('user/classes.html', user=user, classes=classes)
+
+
+# người dùng xem sinh viên trong lớp mình
+@app.route('/class/students/<int:class_id>', methods=['GET'])
+def class_students(class_id):
+    # Lấy thông tin lớp
+    class_info = Class.query.get_or_404(class_id)
+    
+    # Lấy danh sách sinh viên thuộc lớp này
+    students = db.session.query(User).join(Student_Class).filter(Student_Class.class_id == class_id).all()
+    
+    return render_template('user/students.html', class_info=class_info, students=students)
 
 
 # -------------------admin area-------------------
@@ -239,7 +266,7 @@ def userUpdateProfile():
 def adminIndex():
     # Nếu người dùng đã đăng nhập và có quyền admin
     if session.get('user_id') and session.get('role') == 'admin':
-        return redirect('/admin/dashboard')
+        return redirect('/admin/class/all')
 
     if request.method == 'POST':
         username = request.form.get('username')
@@ -258,7 +285,7 @@ def adminIndex():
                 session['username'] = admin_user.username
                 session['role'] = admin_user.role
                 flash('Admin login successful', 'success')
-                return redirect('/admin/dashboard')
+                return redirect('/admin/class/all')
         else:
             flash('Invalid Username and Password', 'danger')
             return redirect('/admin/')
@@ -325,14 +352,14 @@ def change_admin_password():
         
         if old_password == "" or password == "":
             flash('Please fill all fields', 'danger')
-            return redirect('/user/change-password')
+            return redirect('/admin/change-password')
         
         if bcrypt.check_password_hash(admin.password, old_password):  # Kiểm tra mật khẩu cũ
             hash_password = bcrypt.generate_password_hash(password, 10)
             admin.password = hash_password  # Cập nhật mật khẩu
             db.session.commit()
             flash('Password changed successfully', 'success')
-            return redirect('/admin/dashboard')  # Chuyển hướng đến dashboard
+            return redirect('/admin/class/all')  # Chuyển hướng đến dashboard
         else:
             flash('Invalid old password', 'danger')
             return redirect('/admin/change-password')
@@ -345,14 +372,7 @@ def get_all_class():
     classes = Class.query.join(Subject, Class.id_subject == Subject.id_subject).add_column(Subject.name.label("subject_name")).all()
 
     return render_template("/admin/all-class.html", title="All Class", classes = classes)
-    
-# Admin all subject
-@app.route('/admin/subject/all')
-def get_all_subject():
-    if not session.get('user_id') and session.get('role') == 'admin':
-        return redirect('/admin')
-    subjects = Subject.query.all()
-    return render_template("/admin/all-subject.html", title="All Subject", subjects = subjects)
+
 
 
 # Thêm class
@@ -377,24 +397,6 @@ def add_class():
             return redirect('/admin/class/all')
         
 
-#Thêm subject
-@app.route("/admin/subject/add", methods = ["GET", "POST"])
-def add_subject():
-    if not session.get('user_id') and session.get('role') == 'admin':
-        return redirect('/admin')
-    if request.method == "GET":
-        return render_template("/admin/add-subject.html", title="Add Subject")
-    else:
-        class_name = request.form.get('class_name')
-        if class_name == "":
-            flash('please fill all fields')
-            return redirect('/admin/subject/add')
-        else:
-            nclass = Subject(name = class_name)
-            db.session.add(nclass)
-            db.session.commit()
-            flash('Create class success')
-            return redirect('/admin/subject/all')
         
 
 @app.route('/admin/class')
@@ -476,6 +478,30 @@ def remove_student_from_class():
     return redirect(f'/admin/class?id={class_id}')
 
     
+# Xóa 1 lớp 
+@app.route('/admin/class/delete/<int:id>', methods=['POST'])
+def delete_class(id):
+    # Lấy lớp học cần xóa
+    class_to_delete = Class.query.get(id)
+    
+    # Kiểm tra nếu lớp học tồn tại
+    if class_to_delete:
+        try:
+            # Xóa các bản ghi liên quan trong bảng student_class
+            Student_Class.query.filter_by(class_id=id).delete()
+            
+            # Xóa lớp học trong bảng class
+            db.session.delete(class_to_delete)
+            db.session.commit()
+            
+            flash("Class and related entries successfully deleted.", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error occurred while deleting the class: {str(e)}", "danger")
+    else:
+        flash("Class not found.", "warning")
+    
+    return redirect('/admin/class/all')
 
 
 if __name__ == '__main__':
