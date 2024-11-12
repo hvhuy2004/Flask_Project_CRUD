@@ -10,17 +10,12 @@
     </div>
     {% endif %}
     {% endwith %}
-
-    <div class="my-2 d-flex justify-content-center">
-        <form action="" method="POST" style="width: 100%;">
-            <div class="d-flex align-items-center justify-content-center">
-                <input type="text" name="search" id="search" class="form-control my-1 w-50" value="{{ search }}">
-                <button type=" submit" class="btn btn-success" style="margin-left:15px">Search</button>
-            </div>
-
-        </form>
+    <div class="d-flex justify-content-between align-items-center my-2">
+        <h2>Class : {{class_name}}</h2>
+        <a href="/admin/class/students/add?class_id= {{ class_id }} " class="btn btn-primary">Add Student</a>
     </div>
-    <div class="my-3">
+
+    <div class="my-2">
         <div class="table-responsive">
             <table class="table table-bordered">
                 <thead>
@@ -36,7 +31,7 @@
                 </thead>
 
                 <tbody>
-                    {% for user in users %}
+                    {% for user, relative_id in users %}
                     <tr>
                         <td>{{user.id}}</td>
                         <td>{{user.fname}}</td>
@@ -46,15 +41,9 @@
                         <td>{{user.username}}</td>
                         <td>{{user.email}}</td>
                         <td class="text-center">
-                            {% if user.status ==1%}
-                            <a href="/admin/unapprove-user/{{user.id}}">
-                                <button class="btn btn-success">Approved</button>
+                            <a href="/admin/students/remove?id={{relative_id}}&class_id={{ class_id }}">
+                                <button class="btn btn-danger">Remove</button>
                             </a>
-                            {% else %}
-                            <a href="/admin/approve-user/{{user.id}}">
-                                <button class="btn btn-warning">Approve</button>
-                            </a>
-                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}

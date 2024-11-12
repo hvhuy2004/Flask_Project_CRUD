@@ -12,31 +12,35 @@
     {% endif %}
     {% endwith %}
     {% include 'user/navbar.html' %}
+
     <div class="container">
         <div class="my-2">
             <div class="table-responsive">
                 <table class="table table-bordered">
                     <thead>
                         <tr>
-                            <th>Id</th>
+                            <th>Student Code</th>
                             <th>First Name</th>
                             <th>Last Name</th>
                             <th>Birth Year</th>
-                            <th>Student Code</th>
                             <th>Username</th>
                             <th>Email</th>
+                            <th>Classes</th> <!-- Thêm cột Classes -->
                         </tr>
                     </thead>
 
                     <tbody>
                         <tr>
-                            <td>{{users.id}}</td>
-                            <td>{{users.fname}}</td>
-                            <td>{{users.lname}}</td>
-                            <td>{{users.birth_year}}</td>
-                            <td>{{users.student_code}}</td>
-                            <td>{{users.username}}</td>
-                            <td>{{users.email}}</td>
+                            <td>{{ users.student_code }}</td>
+                            <td>{{ users.fname }}</td>
+                            <td>{{ users.lname }}</td>
+                            <td>{{ users.birth_year }}</td>
+                            <td>{{ users.username }}</td>
+                            <td>{{ users.email }}</td>
+                            <td>
+                                <!-- Thêm nút "See All" -->
+                                <a href="/user/classes/{{ users.id }}" class="btn btn-info btn-sm">See All</a>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
