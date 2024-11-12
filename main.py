@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, flash, redirect, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_session import Session
 from flask_bcrypt import Bcrypt
+from sqlalchemy import or_
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///ums.sqlite"
@@ -318,8 +319,16 @@ def adminLogout():
 # Admin get all user
 @app.route('/admin/get-all-user', methods=['GET', 'POST'])
 def adminGetAllUser():
-    users = User.query.filter_by(role='user').all()
-    return render_template('admin/all-user.html', title="Approve User", users = users)
+    if request.method == 'POST':
+        search = request.form.get('search')
+        users = User.query.filter_by(role='user').filter(
+            or_(User.fname.like('%' + search + '%'), User.lname.like('%' + search + '%'))
+        ).all()
+        return render_template('admin/all-user.html', title="Approve User", users = users)
+        
+    else:
+        users = User.query.filter_by(role='user').all()
+        return render_template('admin/all-user.html', title="Approve User", users = users, search=search)
 
 
 # Admin approve user
