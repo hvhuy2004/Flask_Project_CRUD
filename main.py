@@ -324,9 +324,10 @@ def adminGetAllUser():
         users = User.query.filter_by(role='user').filter(
             or_(User.fname.like('%' + search + '%'), User.lname.like('%' + search + '%'))
         ).all()
-        return render_template('admin/all-user.html', title="Approve User", users = users)
+        return render_template('admin/all-user.html', title="Approve User", users = users, search = search)
         
     else:
+        search = ''
         users = User.query.filter_by(role='user').all()
         return render_template('admin/all-user.html', title="Approve User", users = users, search=search)
 
