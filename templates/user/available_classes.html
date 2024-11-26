@@ -1,0 +1,37 @@
+{% extends "user/layout.html" %}
+
+{% block content %}
+<div class="container">
+    {% include 'user/navbar.html' %}
+
+    <div class="my-2">
+        <h2>Available Classes:</h2>
+        {% if classes %}
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Class Name</th>
+                    <th>Subject</th>
+                    <th style="width:150px">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for class_info, subject_name in classes %}
+                <tr>
+                    <td>{{ class_info.name }}</td>
+                    <td>{{ subject_name }}</td>
+                    <td>
+                        <form action="{{ url_for('register_class', class_id=class_info.id_class) }}" method="POST">
+                            <button type="submit" class="btn btn-primary">Register</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No available classes to register.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock content %}

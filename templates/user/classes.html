@@ -21,13 +21,13 @@
                     <td>{{ subject_name }}</td>
                     <td>
                         <a href="{{ url_for('class_students', class_id=class.id_class) }}">
-                            <button class="btn btn-info" >See all</button>
+                            <button class="btn btn-info">See all</button>
                         </a>
                     </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="3">No classes found for this user.</td>
+                    <td colspan="3">No classes found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
