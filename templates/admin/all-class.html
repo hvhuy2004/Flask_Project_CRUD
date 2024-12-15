@@ -2,7 +2,6 @@
 
 {% block content %}
 <div class="container">
-    {% include "admin/navbar.html" %}
     {% with messages = get_flashed_messages() %}
     {% if messages %}
     <div class="alert alert-success">
@@ -34,12 +33,12 @@
                         <td>{{ class.id_class }}</td>
                         <td>{{ class.name }}</td>
                         <td>{{ subject_name }}</td>
-                        <td class="text-left">
+                        <td class="text-center">
                             <a href="/admin/class?id={{ class.id_class }}">
                                 <button class="btn btn-info">See all</button>
                             </a>
                         </td>
-                        <td>
+                        <td class="text-center">
                             <form action="/admin/class/delete/{{ class.id_class }}" method="POST"
                                 style="display: inline; width: 180px;">
                                 <button type="submit" class="btn btn-danger"

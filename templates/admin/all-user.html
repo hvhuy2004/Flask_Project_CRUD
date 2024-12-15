@@ -2,7 +2,6 @@
 
 {% block content %}
 <div class="container">
-    {% include "admin/navbar.html" %}
     {% with messages = get_flashed_messages() %}
     {% if messages %}
     <div class="alert alert-success">
@@ -10,17 +9,19 @@
     </div>
     {% endif %}
     {% endwith %}
-
-    <div class="my-2 d-flex justify-content-center">
-        <form action="" method="POST" style="width: 100%;">
-            <div class="d-flex align-items-center justify-content-center">
-                <input type="text" name="search" id="search" class="form-control my-1 w-50" value="{{ search }}">
-                <button type=" submit" class="btn btn-success" style="margin-left:15px">Search</button>
-            </div>
-
-        </form>
-    </div>
     <div class="my-3">
+        <div class="my-2 d-flex justify-content-center">
+            <form action="" method="POST" style="width: 100%;">
+                <div class="d-flex align-items-center justify-content-center">
+                    <input type="text" name="search" id="search" class="form-control my-1 w-100" value="{{ search }}" placeholder="Search for students here">
+                    <button type="submit" class="btn btn-success" style="margin-left:15px; width: 15%;">Search</button>
+                </div>
+    
+            </form>
+        </div>
+        <div class="d-flex justify-content-between align-items-center my-2">
+            <h2>Students</h2>
+        </div>
         <div class="table-responsive">
             <table class="table table-bordered">
                 <thead>

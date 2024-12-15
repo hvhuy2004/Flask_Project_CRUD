@@ -2,7 +2,6 @@
 
 {% block content %}
 <div class="container">
-    {% include "admin/navbar.html" %}
     {% with messages = get_flashed_messages() %}
     {% if messages %}
     <div class="alert alert-success">
@@ -10,7 +9,6 @@
     </div>
     {% endif %}
     {% endwith %}
-
     <div class="card">
         <div class="card-body">
             <form action="" method="POST">

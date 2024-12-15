@@ -1,5 +1,7 @@
 {% extends "user/layout.html" %}
 
+
+
 {% block content %}
 <div class="container">
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -11,9 +13,11 @@
     {% endfor %}
     {% endif %}
     {% endwith %}
-    {% include 'user/navbar.html' %}
 
     <div class="container">
+        <h2 class="text-left my-3">
+            Dashboard
+        </h2>
         <div class="my-2">
             <div class="table-responsive">
                 <table class="table table-bordered">
