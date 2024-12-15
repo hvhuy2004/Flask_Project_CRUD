@@ -54,10 +54,10 @@ with app.app_context():
     db.create_all()
     print("Database and tables created.")
 
-# Main index file
-@app.route('/')
-def index():
-    return render_template('index.html', title="")
+# # Main index file
+# @app.route('/')
+# def index():
+#     return render_template('index.html', title="")
 
 # # Admin login
 # @app.route('/admin/')
@@ -67,23 +67,27 @@ def index():
 # -------------------user area-------------------
 
 # User login
-@app.route('/user/', methods=['POST', 'GET'])
+@app.route('/', methods=['POST', 'GET'])
 def userIndex():
     if session.get('user_id'):
-        return redirect('/user/dashboard')
-
+        if session.get('role') == 'admin':
+            return redirect('/admin/class/')
+        else:
+            return redirect('/user/dashboard')
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-
         users = User.query.filter_by(username=username).first()
         if users and bcrypt.check_password_hash(users.password, password):
             if users.status == 0:
                 flash('Your account is not approved by Admin', 'danger')
-                return redirect('/user/')
+                return redirect('/')
             elif users.role != 'user':
-                flash('You do not have permission to log in', 'danger')
-                return redirect('/user/')
+                session['user_id'] = users.id
+                session['username'] = users.username
+                session['role'] = users.role
+                flash('Login Successfully', 'success')
+                return redirect('/admin/class/')
             else:
                 session['user_id'] = users.id
                 session['username'] = users.username
@@ -91,9 +95,9 @@ def userIndex():
                 return redirect('/user/dashboard')
         else:
             flash('Invalid Username and Password', 'danger')
-            return redirect('/user/')
+            return redirect('/')
 
-    return render_template('user/index.html', title="User Login")
+    return render_template('/index.html', title="User Login")
 
 
 
@@ -112,7 +116,6 @@ def userSignup():
         email = request.form.get('email')
         username = request.form.get('username')
         password = request.form.get('password')
-
         # Check if all fields are filled
         if not all([fname, lname, email, password, username, birth_year, student_code]):
             flash('Please fill all the fields', 'danger')
@@ -134,24 +137,23 @@ def userSignup():
                 db.session.add(user)
                 db.session.commit()
                 flash('Account created successfully! Admin will approve your account.', 'success')
-                return redirect('/user/')
-
+                return redirect('/')
     else:
-        return render_template('user/signup.html', title="User Signup")
+        return render_template('/signup.html', title="User Signup")
 
 
 # User dashboard
 @app.route('/user/dashboard')
 def userDashboard():
     if not session.get('user_id'):
-        return redirect('/user/')
+        return redirect('/')
     
     user = User.query.get(session.get('user_id'))
     
     # Kiểm tra nếu role là "user"
     if user.role != "user":
         flash("Access denied: You are not authorized to access this page.", "danger")
-        return redirect('/user/')
+        return redirect('/')
     
     return render_template('user/dashboard.html', title="User Dashboard", users=user)
 
@@ -159,27 +161,27 @@ def userDashboard():
 @app.route('/user/logout')
 def userLogout():
     if not session.get('user_id'):
-        return redirect('/user/')
-
+        return redirect('/')
     if session.get('user_id'):
         session['user_id'] = None
         session['username'] = None
+        session['role'] = None
         session.clear()
         flash('Logout successfully', 'success')
-        return redirect('/user/')
+        return redirect('/')
     
 
 @app.route('/user/change-password', methods=["POST", "GET"])
 def userChangePassword():
     if not session.get('user_id'):
-        return redirect('/user/')
+        return redirect('/')
     
     user = User.query.get(session.get('user_id'))
     
     # Kiểm tra nếu role là "user"
     if user.role != "user":
         flash("Access denied: You are not authorized to access this page.", "danger")
-        return redirect('/user/')
+        return redirect('/')
     
     if request.method == 'POST':
         old_password = request.form.get('old_password')
@@ -205,14 +207,14 @@ def userChangePassword():
 @app.route('/user/update-profile', methods=['POST', 'GET'])
 def userUpdateProfile():
     if not session.get('user_id'):
-        return redirect('/user/')
+        return redirect('/')
     
     user = User.query.get(session.get('user_id'))
     
     # Kiểm tra nếu role là "user"
     if user.role != "user":
         flash("Access denied: You are not authorized to access this page.", "danger")
-        return redirect('/user/')
+        return redirect('/')
     
     if request.method == 'POST':
         # Get all input fields
@@ -268,7 +270,7 @@ def class_students(class_id):
 def available_classes():
     if not session.get('user_id'):
         flash("You need to log in to view available classes.", "danger")
-        return redirect('/user/')
+        return redirect('/')
 
     user_id = session.get('user_id')
 
@@ -288,7 +290,7 @@ def available_classes():
 def register_class(class_id):
     if not session.get('user_id'):
         flash("You need to log in to register for a class.", "danger")
-        return redirect('/user/')
+        return redirect('/')
 
     user_id = session.get('user_id')
 
@@ -313,7 +315,7 @@ def register_class(class_id):
 def adminIndex():
     # Nếu người dùng đã đăng nhập và có quyền admin
     if session.get('user_id') and session.get('role') == 'admin':
-        return redirect('/admin/class/all')
+        return redirect('/admin/class/')
 
     if request.method == 'POST':
         username = request.form.get('username')
@@ -332,7 +334,7 @@ def adminIndex():
                 session['username'] = admin_user.username
                 session['role'] = admin_user.role
                 flash('Admin login successful', 'success')
-                return redirect('/admin/class/all')
+                return redirect('/admin/class/')
         else:
             flash('Invalid Username and Password', 'danger')
             return redirect('/admin/')
@@ -352,14 +354,14 @@ def adminDashboard():
 @app.route('/admin/logout')
 def adminLogout():
     if not session.get('user_id'):
-        return redirect('/admin/')
-
+        return redirect('/')
     if session.get('user_id'):
         session['user_id'] = None
         session['username'] = None
+        session['role'] = None
         session.clear()
         flash('Logout successfully', 'success')
-        return redirect('/admin/')
+        return redirect('/')
 
 
 # Admin get all user
@@ -415,13 +417,13 @@ def change_admin_password():
             admin.password = hash_password  # Cập nhật mật khẩu
             db.session.commit()
             flash('Password changed successfully', 'success')
-            return redirect('/admin/class/all')  # Chuyển hướng đến dashboard
+            return redirect('/admin/class/')  # Chuyển hướng đến dashboard
         else:
             flash('Invalid old password', 'danger')
             return redirect('/admin/change-password')
 
 # Admin all class
-@app.route('/admin/class/all')
+@app.route('/admin/class/')
 def get_all_class():
     if not session.get('user_id') and session.get('role') == 'admin':
         return redirect('/admin')
@@ -450,7 +452,7 @@ def add_class():
             db.session.add(nclass)
             db.session.commit()
             flash('Create class success')
-            return redirect('/admin/class/all')
+            return redirect('/admin/class/')
         
 
         
@@ -467,7 +469,7 @@ def get_students_in_class():
 
     if id is None:
         flash("class_id is required")
-        return redirect("/admin/class/all")
+        return redirect("/admin/class/")
     
     # Lấy danh sách sinh viên có status = 1 trong bảng Student_Class
     students = db.session.query(User).join(Student_Class, User.id == Student_Class.user_id).filter(
@@ -562,7 +564,7 @@ def delete_class(id):
     else:
         flash("Class not found.", "warning")
     
-    return redirect('/admin/class/all')
+    return redirect('/admin/class/')
 
 
 # Admin hiển thị yêu cầu đăng kí lớp
