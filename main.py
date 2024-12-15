@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, flash, redirect, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_session import Session
 from flask_bcrypt import Bcrypt
+from sqlalchemy import or_
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///ums.sqlite"
@@ -41,7 +42,12 @@ class Subject(db.Model):
     id_subject = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
     id_class = db.Column(db.Integer, db.ForeignKey('class.id_class'), nullable=True)
-
+# Quan hệ class và student:
+class Student_Class(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    class_id = db.Column(db.Integer, db.ForeignKey('class.id_class'), nullable=False)
+    status = db.Column(db.Integer, default=0, nullable=False)  # 0: Pending, 1: Approved
 
 # Tạo bảng trong cơ sở dữ liệu
 with app.app_context():
@@ -227,6 +233,77 @@ def userUpdateProfile():
             return redirect('/user/update-profile')
     else:
         return render_template('user/update-profile.html', title="Update Profile", users=user)
+    
+# người dùng xem lớp của mình
+@app.route('/user/classes/<int:user_id>', methods=['GET'])
+def user_classes(user_id):
+    # Lấy thông tin người dùng
+    user = User.query.get_or_404(user_id)
+    
+    # Lấy danh sách các lớp người dùng tham gia, bao gồm cả tên môn học
+    classes = db.session.query(Class, Subject.name.label('subject_name')) \
+        .join(Subject, Class.id_subject == Subject.id_subject) \
+        .join(Student_Class, Student_Class.class_id == Class.id_class) \
+        .filter(Student_Class.user_id == user_id).filter(Student_Class.status == 1).all()
+    
+    # Trả về template với thông tin các lớp và môn học
+    return render_template('user/classes.html', user=user, classes=classes)
+
+
+# người dùng xem sinh viên trong lớp mình
+@app.route('/class/students/<int:class_id>', methods=['GET'])
+def class_students(class_id):
+    # Lấy thông tin lớp
+    class_info = Class.query.get_or_404(class_id)
+    
+    # Lấy danh sách sinh viên thuộc lớp này
+    students = db.session.query(User).join(Student_Class).filter(Student_Class.class_id == class_id).all()
+    
+    return render_template('user/students.html', class_info=class_info, students=students)
+
+
+
+# Sinh viên đăng kí vào 1 lớp
+@app.route('/user/classes/available', methods=['GET'])
+def available_classes():
+    if not session.get('user_id'):
+        flash("You need to log in to view available classes.", "danger")
+        return redirect('/user/')
+
+    user_id = session.get('user_id')
+
+    # Lấy danh sách lớp mà user chưa đăng ký
+    subquery = db.session.query(Student_Class.class_id).filter(Student_Class.user_id == user_id)
+
+    # Truy vấn lớp chưa đăng ký và lấy tên môn học cùng với lớp
+    available_classes = db.session.query(Class, Subject.name.label('subject_name')) \
+        .outerjoin(Subject, Class.id_subject == Subject.id_subject) \
+        .filter(Class.id_class.notin_(subquery)) \
+        .all()
+
+    return render_template('user/available_classes.html', classes=available_classes)
+
+
+@app.route('/user/classes/register/<int:class_id>', methods=['POST'])
+def register_class(class_id):
+    if not session.get('user_id'):
+        flash("You need to log in to register for a class.", "danger")
+        return redirect('/user/')
+
+    user_id = session.get('user_id')
+
+    # Kiểm tra xem đã đăng ký trước đó hay chưa
+    existing_registration = Student_Class.query.filter_by(user_id=user_id, class_id=class_id).first()
+    if existing_registration:
+        flash("You have already registered for this class.", "warning")
+        return redirect('/user/classes/available')
+
+    # Tạo yêu cầu đăng ký mới
+    new_registration = Student_Class(user_id=user_id, class_id=class_id)
+    db.session.add(new_registration)
+    db.session.commit()
+    flash("Class registration request sent. Please wait for admin approval.", "success")
+    return redirect('/user/classes/available')
 
 
 # -------------------admin area-------------------
@@ -236,7 +313,7 @@ def userUpdateProfile():
 def adminIndex():
     # Nếu người dùng đã đăng nhập và có quyền admin
     if session.get('user_id') and session.get('role') == 'admin':
-        return redirect('/admin/dashboard')
+        return redirect('/admin/class/all')
 
     if request.method == 'POST':
         username = request.form.get('username')
@@ -255,7 +332,7 @@ def adminIndex():
                 session['username'] = admin_user.username
                 session['role'] = admin_user.role
                 flash('Admin login successful', 'success')
-                return redirect('/admin/dashboard')
+                return redirect('/admin/class/all')
         else:
             flash('Invalid Username and Password', 'danger')
             return redirect('/admin/')
@@ -288,8 +365,17 @@ def adminLogout():
 # Admin get all user
 @app.route('/admin/get-all-user', methods=['GET', 'POST'])
 def adminGetAllUser():
-    users = User.query.filter_by(role='user').all()
-    return render_template('admin/all-user.html', title="Approve User", users = users)
+    if request.method == 'POST':
+        search = request.form.get('search')
+        users = User.query.filter_by(role='user').filter(
+            or_(User.fname.like('%' + search + '%'), User.lname.like('%' + search + '%'))
+        ).all()
+        return render_template('admin/all-user.html', title="Approve User", users = users, search = search)
+        
+    else:
+        search = ''
+        users = User.query.filter_by(role='user').all()
+        return render_template('admin/all-user.html', title="Approve User", users = users, search=search)
 
 
 # Admin approve user
@@ -322,18 +408,200 @@ def change_admin_password():
         
         if old_password == "" or password == "":
             flash('Please fill all fields', 'danger')
-            return redirect('/user/change-password')
+            return redirect('/admin/change-password')
         
         if bcrypt.check_password_hash(admin.password, old_password):  # Kiểm tra mật khẩu cũ
             hash_password = bcrypt.generate_password_hash(password, 10)
             admin.password = hash_password  # Cập nhật mật khẩu
             db.session.commit()
             flash('Password changed successfully', 'success')
-            return redirect('/admin/dashboard')  # Chuyển hướng đến dashboard
+            return redirect('/admin/class/all')  # Chuyển hướng đến dashboard
         else:
             flash('Invalid old password', 'danger')
             return redirect('/admin/change-password')
 
+# Admin all class
+@app.route('/admin/class/all')
+def get_all_class():
+    if not session.get('user_id') and session.get('role') == 'admin':
+        return redirect('/admin')
+    classes = Class.query.join(Subject, Class.id_subject == Subject.id_subject).add_column(Subject.name.label("subject_name")).all()
+
+    return render_template("/admin/all-class.html", title="All Class", classes = classes)
+
+
+
+# Thêm class
+@app.route('/admin/class/add', methods = ["POST", "GET"])
+def add_class():
+    subjects = Subject.query.all()
+    if not session.get('user_id') and session.get('role') == 'admin':
+        return redirect('/admin')
+    if request.method == "GET":
+        return render_template("/admin/add-class.html", title="Add Class", subjects = subjects)
+    else:
+        class_name = request.form.get('class_name')
+        subject_id = request.form.get('subject_id')
+        if class_name == "" or subject_id == "":
+            flash('please fill all fields')
+            return redirect('admin/class/add')
+        else:
+            nclass = Class(name = class_name, id_subject = subject_id)
+            db.session.add(nclass)
+            db.session.commit()
+            flash('Create class success')
+            return redirect('/admin/class/all')
+        
+
+        
+
+@app.route('/admin/class')
+def get_students_in_class():
+    if not session.get('user_id') or session.get('role') != 'admin':
+        return redirect('/admin')
+    id = request.args.get('id', type=int)
+    print(id)
+
+    # Lấy thông tin lớp từ bảng Class
+    class_info = Class.query.get(id)
+
+    if id is None:
+        flash("class_id is required")
+        return redirect("/admin/class/all")
+    
+    # Lấy danh sách sinh viên có status = 1 trong bảng Student_Class
+    students = db.session.query(User).join(Student_Class, User.id == Student_Class.user_id).filter(
+        Student_Class.class_id == id,
+        Student_Class.status == 1  # Chỉ lấy những sinh viên có status = 1
+    ).add_column(Student_Class.id.label("relative_id")).all()
+
+    print(students)
+    return render_template("/admin/class's_student.html", class_id=id, class_name=class_info.name, users=students)
+
+
+@app.route('/admin/class/students/add', methods=['GET', 'POST'])
+def add_student_to_class():
+    # Kiểm tra nếu người dùng chưa đăng nhập hoặc không phải là admin
+    if not session.get('user_id') or session.get('role') != 'admin':
+        return redirect('/admin')
+
+    # Lấy class_id từ URL
+    class_id = request.args.get('class_id', type=int)
+
+    
+    # Lấy thông tin lớp từ bảng Class
+    class_info = Class.query.get(class_id)
+
+    # Nếu là yêu cầu POST
+    if request.method == 'POST':
+        student_id = request.form.get('student_id')
+
+        if student_id:
+            # Kiểm tra nếu sinh viên tồn tại
+            student = User.query.get(student_id)
+            if student:
+                # Thêm sinh viên vào lớp
+                new_entry = Student_Class(user_id=student.id, class_id=class_id)
+                db.session.add(new_entry)
+                db.session.commit()
+                flash('Student added to class successfully.', 'success')
+                return redirect(f'/admin/class?id={class_id}')
+
+    # Lấy danh sách sinh viên có status = 1 và chưa có trong lớp
+    students_in_class = db.session.query(Student_Class.user_id).filter_by(class_id=class_id).all()
+    student_ids_in_class = [student[0] for student in students_in_class]
+
+    # Lọc danh sách sinh viên có status = 1 và chưa có trong lớp
+    students = User.query.filter(User.status == 1, User.role == 'user', User.id.notin_(student_ids_in_class)).all()
+
+    return render_template('admin/add_student.html', students=students, class_id=class_id )
+
+    
+
+# Xóa user khỏi lớp 
+@app.route('/admin/students/remove', methods=['GET'])
+def remove_student_from_class():
+    relative_id = request.args.get('id', type=int)
+
+    if not session.get('user_id') or session.get('role') != 'admin':
+        return redirect('/admin')
+
+    if relative_id:
+        student_class = Student_Class.query.get(relative_id)
+        if student_class:
+            db.session.delete(student_class)
+            db.session.commit()
+            flash('Student removed from class successfully.', 'success')
+        else:
+            flash('Student not found in the class.', 'danger')
+
+    class_id = request.args.get('class_id', type=int)
+    return redirect(f'/admin/class?id={class_id}')
+
+    
+# Xóa 1 lớp 
+@app.route('/admin/class/delete/<int:id>', methods=['POST'])
+def delete_class(id):
+    # Lấy lớp học cần xóa
+    class_to_delete = Class.query.get(id)
+    
+    # Kiểm tra nếu lớp học tồn tại
+    if class_to_delete:
+        try:
+            # Xóa các bản ghi liên quan trong bảng student_class
+            Student_Class.query.filter_by(class_id=id).delete()
+            
+            # Xóa lớp học trong bảng class
+            db.session.delete(class_to_delete)
+            db.session.commit()
+            
+            flash("Class and related entries successfully deleted.", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error occurred while deleting the class: {str(e)}", "danger")
+    else:
+        flash("Class not found.", "warning")
+    
+    return redirect('/admin/class/all')
+
+
+# Admin hiển thị yêu cầu đăng kí lớp
+@app.route('/admin/registration_requests', methods=['GET'])
+def registration_requests():
+    requests = db.session.query(Student_Class, User, Class, Subject).join(
+        User, Student_Class.user_id == User.id
+    ).join(
+        Class, Student_Class.class_id == Class.id_class
+    ).join(
+        Subject, Class.id_subject == Subject.id_subject  # Thêm bảng Subject vào join
+    ).filter(Student_Class.status == 0).all()
+
+    return render_template('admin/registration_requests.html', requests=requests)
+
+
+# Xử lí yêu cầu duyệt vào lớp
+@app.route('/admin/registration_requests/<int:request_id>', methods=['POST'])
+def process_request(request_id):
+
+    action = request.form.get('action')
+    registration_request = Student_Class.query.get(request_id)
+
+    if not registration_request:
+        flash("Request not found.", "danger")
+        return redirect('/admin/registration_requests')
+
+    if action == 'approve':
+        registration_request.status = 1
+        flash("Registration approved successfully.", "success")
+    elif action == 'reject':
+        db.session.delete(registration_request)
+        flash("Registration rejected successfully.", "success")
+    else:
+        flash("Invalid action.", "danger")
+        return redirect('/admin/registration_requests')
+
+    db.session.commit()
+    return redirect('/admin/registration_requests')
 
 if __name__ == '__main__':
     app.run(debug=True)

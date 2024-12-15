@@ -1,0 +1,37 @@
+{% extends "user/layout.html" %}
+
+{% block content %}
+<div class="container">
+    {% include 'user/navbar.html' %}
+
+    <div class="my-2">
+        <h2>Your classes: </h2>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Class Name</th>
+                    <th>Course</th>
+                    <th style="width:150px">Students</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for class, subject_name in classes %}
+                <tr>
+                    <td>{{ class.name }}</td>
+                    <td>{{ subject_name }}</td>
+                    <td>
+                        <a href="{{ url_for('class_students', class_id=class.id_class) }}">
+                            <button class="btn btn-info">See all</button>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3">No classes found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock content %}
