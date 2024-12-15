@@ -44,9 +44,11 @@ class Subject(db.Model):
     id_class = db.Column(db.Integer, db.ForeignKey('class.id_class'), nullable=True)
 # Quan hệ class và student:
 class Student_Class(db.Model):
-    id = db.Column(db.Integer, primary_key = True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    class_id = db.Column(db.Integer, db.ForeignKey('class.id_class'), nullable=True)
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    class_id = db.Column(db.Integer, db.ForeignKey('class.id_class'), nullable=False)
+    status = db.Column(db.Integer, default=0, nullable=False)  # 0: Pending, 1: Approved
+
 # Tạo bảng trong cơ sở dữ liệu
 with app.app_context():
     db.create_all()
@@ -242,7 +244,7 @@ def user_classes(user_id):
     classes = db.session.query(Class, Subject.name.label('subject_name')) \
         .join(Subject, Class.id_subject == Subject.id_subject) \
         .join(Student_Class, Student_Class.class_id == Class.id_class) \
-        .filter(Student_Class.user_id == user_id).all()
+        .filter(Student_Class.user_id == user_id).filter(Student_Class.status == 1).all()
     
     # Trả về template với thông tin các lớp và môn học
     return render_template('user/classes.html', user=user, classes=classes)
@@ -258,6 +260,50 @@ def class_students(class_id):
     students = db.session.query(User).join(Student_Class).filter(Student_Class.class_id == class_id).all()
     
     return render_template('user/students.html', class_info=class_info, students=students)
+
+
+
+# Sinh viên đăng kí vào 1 lớp
+@app.route('/user/classes/available', methods=['GET'])
+def available_classes():
+    if not session.get('user_id'):
+        flash("You need to log in to view available classes.", "danger")
+        return redirect('/user/')
+
+    user_id = session.get('user_id')
+
+    # Lấy danh sách lớp mà user chưa đăng ký
+    subquery = db.session.query(Student_Class.class_id).filter(Student_Class.user_id == user_id)
+
+    # Truy vấn lớp chưa đăng ký và lấy tên môn học cùng với lớp
+    available_classes = db.session.query(Class, Subject.name.label('subject_name')) \
+        .outerjoin(Subject, Class.id_subject == Subject.id_subject) \
+        .filter(Class.id_class.notin_(subquery)) \
+        .all()
+
+    return render_template('user/available_classes.html', classes=available_classes)
+
+
+@app.route('/user/classes/register/<int:class_id>', methods=['POST'])
+def register_class(class_id):
+    if not session.get('user_id'):
+        flash("You need to log in to register for a class.", "danger")
+        return redirect('/user/')
+
+    user_id = session.get('user_id')
+
+    # Kiểm tra xem đã đăng ký trước đó hay chưa
+    existing_registration = Student_Class.query.filter_by(user_id=user_id, class_id=class_id).first()
+    if existing_registration:
+        flash("You have already registered for this class.", "warning")
+        return redirect('/user/classes/available')
+
+    # Tạo yêu cầu đăng ký mới
+    new_registration = Student_Class(user_id=user_id, class_id=class_id)
+    db.session.add(new_registration)
+    db.session.commit()
+    flash("Class registration request sent. Please wait for admin approval.", "success")
+    return redirect('/user/classes/available')
 
 
 # -------------------admin area-------------------
@@ -411,7 +457,7 @@ def add_class():
 
 @app.route('/admin/class')
 def get_students_in_class():
-    if not session.get('user_id') and session.get('role') == 'admin':
+    if not session.get('user_id') or session.get('role') != 'admin':
         return redirect('/admin')
     id = request.args.get('id', type=int)
     print(id)
@@ -422,10 +468,15 @@ def get_students_in_class():
     if id is None:
         flash("class_id is required")
         return redirect("/admin/class/all")
-    students = db.session.query(User).join(Student_Class, User.id == Student_Class.user_id).filter(Student_Class.class_id == id).add_column(Student_Class.id.label("relative_id")).all()
-    print(students)
-    return render_template("/admin/class's_student.html", class_id = id, class_name = class_info.name,  users = students)
+    
+    # Lấy danh sách sinh viên có status = 1 trong bảng Student_Class
+    students = db.session.query(User).join(Student_Class, User.id == Student_Class.user_id).filter(
+        Student_Class.class_id == id,
+        Student_Class.status == 1  # Chỉ lấy những sinh viên có status = 1
+    ).add_column(Student_Class.id.label("relative_id")).all()
 
+    print(students)
+    return render_template("/admin/class's_student.html", class_id=id, class_name=class_info.name, users=students)
 
 
 @app.route('/admin/class/students/add', methods=['GET', 'POST'])
@@ -513,6 +564,44 @@ def delete_class(id):
     
     return redirect('/admin/class/all')
 
+
+# Admin hiển thị yêu cầu đăng kí lớp
+@app.route('/admin/registration_requests', methods=['GET'])
+def registration_requests():
+    requests = db.session.query(Student_Class, User, Class, Subject).join(
+        User, Student_Class.user_id == User.id
+    ).join(
+        Class, Student_Class.class_id == Class.id_class
+    ).join(
+        Subject, Class.id_subject == Subject.id_subject  # Thêm bảng Subject vào join
+    ).filter(Student_Class.status == 0).all()
+
+    return render_template('admin/registration_requests.html', requests=requests)
+
+
+# Xử lí yêu cầu duyệt vào lớp
+@app.route('/admin/registration_requests/<int:request_id>', methods=['POST'])
+def process_request(request_id):
+
+    action = request.form.get('action')
+    registration_request = Student_Class.query.get(request_id)
+
+    if not registration_request:
+        flash("Request not found.", "danger")
+        return redirect('/admin/registration_requests')
+
+    if action == 'approve':
+        registration_request.status = 1
+        flash("Registration approved successfully.", "success")
+    elif action == 'reject':
+        db.session.delete(registration_request)
+        flash("Registration rejected successfully.", "success")
+    else:
+        flash("Invalid action.", "danger")
+        return redirect('/admin/registration_requests')
+
+    db.session.commit()
+    return redirect('/admin/registration_requests')
 
 if __name__ == '__main__':
     app.run(debug=True)
