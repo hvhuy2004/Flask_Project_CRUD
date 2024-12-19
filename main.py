@@ -503,7 +503,7 @@ def add_student_to_class():
             student = User.query.get(student_id)
             if student:
                 # Thêm sinh viên vào lớp
-                new_entry = Student_Class(user_id=student.id, class_id=class_id)
+                new_entry = Student_Class(user_id=student.id, class_id=class_id, status = 1)
                 db.session.add(new_entry)
                 db.session.commit()
                 flash('Student added to class successfully.', 'success')
