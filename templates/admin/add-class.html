@@ -2,7 +2,6 @@
 
 {% block content %}
 <div class="container">
-    {% include "admin/navbar.html" %}
     {% with messages = get_flashed_messages() %}
     {% if messages %}
     <div class="alert alert-success">
@@ -31,6 +30,9 @@
                 </div>
                 <button type="submit" class="btn btn-success d-block mx-auto" style="width: 50%;">Add Class</button>
             </form>
+            <div class="text-right">
+                <a href="javascript:history.back()" class="btn btn-secondary btn-sm">Back</a>
+            </div>
         </div>
     </div>
 </div>
