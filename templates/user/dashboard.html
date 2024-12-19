@@ -1,55 +1,128 @@
 {% extends "user/layout.html" %}
 
-
-
 {% block content %}
-<div class="container">
+<div class="wrapper">
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
     {% for category, message in messages %}
-    <div class="alert alert-{{category}}">
+    <div class="alert alert-{{category}} text-center">
         <strong>{{message}}</strong>
     </div>
     {% endfor %}
     {% endif %}
     {% endwith %}
 
-    <div class="container">
-        <h2 class="text-left my-3">
-            Dashboard
-        </h2>
-        <div class="my-2">
-            <div class="table-responsive">
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>Student Code</th>
-                            <th>First Name</th>
-                            <th>Last Name</th>
-                            <th>Birth Year</th>
-                            <th>Username</th>
-                            <th>Email</th>
-                            <th>Classes</th> <!-- Thêm cột Classes -->
-                        </tr>
-                    </thead>
+    <div class="content">
+        <div class="header">
+            <h2>📚 Student Information</h2>
+        </div>
 
-                    <tbody>
-                        <tr>
-                            <td>{{ users.student_code }}</td>
-                            <td>{{ users.fname }}</td>
-                            <td>{{ users.lname }}</td>
-                            <td>{{ users.birth_year }}</td>
-                            <td>{{ users.username }}</td>
-                            <td>{{ users.email }}</td>
-                            <td>
-                                <!-- Thêm nút "See All" -->
-                                <a href="/user/classes/{{ users.id }}" class="btn btn-info btn-sm">See All</a>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+        <div class="student-details">
+            <div class="detail-row">
+                <span class="label">Student Code:</span>
+                <span class="value">{{ users.student_code }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">First Name:</span>
+                <span class="value">{{ users.fname }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Last Name:</span>
+                <span class="value">{{ users.lname }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Birth Year:</span>
+                <span class="value">{{ users.birth_year }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Username:</span>
+                <span class="value">{{ users.username }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Email:</span>
+                <span class="value">{{ users.email }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Classes:</span>
+                <a href="/user/classes/{{ users.id }}" class="btn btn-info btn-sm">📋 See All</a>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        background: #f9f9f9;
+    }
+
+    .wrapper {
+        width: 100%;
+        padding: 20px;
+        background: #ffffff;
+        box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .content {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .student-details {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        background: #fefefe;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+
+    .label {
+        font-weight: bold;
+        font-size: 1.1em;
+        color: #333;
+    }
+
+    .value {
+        font-size: 1.1em;
+        color: #555;
+    }
+
+    .btn {
+        border-radius: 10px;
+        padding: 5px 10px;
+    }
+
+    .btn-info {
+        background-color: #009eb6;
+        border: none;
+    }
+
+    .btn-info:hover {
+        background-color: #117a8b;
+    }
+</style>
 {% endblock content %}

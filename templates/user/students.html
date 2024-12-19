@@ -1,35 +1,143 @@
 {% extends "user/layout.html" %}
 
 {% block content %}
-<div class="container">
-    <div class="my-2">
-        <h2>{{ class_info.name }}</h2>
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Student Code</th>
-                    <th>First Name</th>
-                    <th>Last Name</th>
-                    <th>Birth Year</th>
-                    <th>Email</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for student in students %}
-                <tr>
-                    <td>{{ student.student_code }}</td>
-                    <td>{{ student.fname }}</td>
-                    <td>{{ student.lname }}</td>
-                    <td>{{ student.birth_year }}</td>
-                    <td>{{ student.email }}</td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="4">No students found for this class.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+<div class="wrapper">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{category}} text-center">
+        <strong>{{message}}</strong>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <div class="content">
+        <div class="header">
+            <h2>📚 Students in {{ class_info.name }}</h2>
+        </div>
+
+        <div class="student-list">
+            {% if students %}
+            {% for student in students %}
+            <div class="student-row">
+                <div class="student-info">
+                    <div class="detail-row">
+                        <span class="label">Student Code:</span>
+                        <span class="value">{{ student.student_code }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">First Name:</span>
+                        <span class="value">{{ student.fname }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Last Name:</span>
+                        <span class="value">{{ student.lname }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Birth Year:</span>
+                        <span class="value">{{ student.birth_year }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Email:</span>
+                        <span class="value">{{ student.email }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="no-students">
+                <p>No students found for this class.</p>
+            </div>
+            {% endif %}
+        </div>
     </div>
 </div>
+
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        background: #f9f9f9;
+    }
+
+    .wrapper {
+        width: 100%;
+        padding: 20px;
+        background: #ffffff;
+        box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .content {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .student-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        background: #fefefe;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .student-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .student-row:last-child {
+        border-bottom: none;
+    }
+
+    .student-info {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .label {
+        font-weight: bold;
+        font-size: 1.1em;
+        color: #333;
+    }
+
+    .value {
+        font-size: 1.1em;
+        color: #555;
+    }
+
+    .no-students {
+        text-align: center;
+        font-size: 1.2em;
+        color: #666;
+    }
+
+    .alert {
+        margin-bottom: 20px;
+        padding: 10px;
+        border-radius: 5px;
+    }
+</style>
+
 {% endblock content %}
