@@ -1,0 +1,39 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="container">
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <div class="alert alert-success">
+        <strong> {{ messages[0] }}</strong>
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="card">
+        <div class="card-body">
+            <form action="" method="POST">
+
+                <div class="form-group mb-3">
+                    <label><b>Enter class name</b></label>
+                    <input type="text" name="class_name" class="form-control" required>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label><b>Select class's course</b></label>
+                    <select name="subject_id" class="form-control" required>
+                        <option value="" disabled selected>Select a course</option>
+                        {% for subject in subjects %}
+                        <option value="{{ subject.id_subject }}">{{ subject.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-success d-block mx-auto" style="width: 50%;">Add Class</button>
+            </form>
+            <div class="text-right">
+                <a href="javascript:history.back()" class="btn btn-secondary btn-sm">Back</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

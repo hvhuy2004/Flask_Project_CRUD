@@ -14,38 +14,31 @@
 
     <div class="content">
         <div class="header">
-            <h2>📚 Student Information</h2>
+            <h2>📚 Your Classes</h2>
         </div>
 
-        <div class="student-details">
-            <div class="detail-row">
-                <span class="label">Student Code:</span>
-                <span class="value">{{ users.student_code }}</span>
+        <div class="class-details">
+            {% for class, subject_name in classes %}
+            <div class="class-row">
+                <div class="class-info">
+                    <div class="detail-row">
+                        <span class="label">Class Name:</span>
+                        <span class="value">{{ class.name }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Course:</span>
+                        <span class="value">{{ subject_name }}</span>
+                    </div>
+                </div>
+                <div class="class-actions">
+                    <a href="{{ url_for('class_students', class_id=class.id_class) }}" class="btn btn-info">See All Students</a>
+                </div>
             </div>
-            <div class="detail-row">
-                <span class="label">First Name:</span>
-                <span class="value">{{ users.fname }}</span>
+            {% else %}
+            <div class="no-classes">
+                <p>No classes found.</p>
             </div>
-            <div class="detail-row">
-                <span class="label">Last Name:</span>
-                <span class="value">{{ users.lname }}</span>
-            </div>
-            <div class="detail-row">
-                <span class="label">Birth Year:</span>
-                <span class="value">{{ users.birth_year }}</span>
-            </div>
-            <div class="detail-row">
-                <span class="label">Username:</span>
-                <span class="value">{{ users.username }}</span>
-            </div>
-            <div class="detail-row">
-                <span class="label">Email:</span>
-                <span class="value">{{ users.email }}</span>
-            </div>
-            <div class="detail-row">
-                <span class="label">Classes:</span>
-                <a href="/user/classes/{{ users.id }}" class="btn btn-info btn-sm">📋 See All</a>
-            </div>
+            {% endfor %}
         </div>
     </div>
 </div>
@@ -78,7 +71,7 @@
         margin-bottom: 10px;
     }
 
-    .student-details {
+    .class-details {
         display: flex;
         flex-direction: column;
         gap: 15px;
@@ -88,16 +81,28 @@
         box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.1);
     }
 
+    .class-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .class-row:last-child {
+        border-bottom: none;
+    }
+
+    .class-info {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
     .detail-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 10px 0;
-        border-bottom: 1px solid #ddd;
-    }
-
-    .detail-row:last-child {
-        border-bottom: none;
     }
 
     .label {
@@ -111,7 +116,7 @@
         color: #555;
     }
 
-    .btn {
+    .class-actions .btn {
         border-radius: 10px;
         padding: 5px 10px;
     }
@@ -125,13 +130,10 @@
         background-color: #117a8b;
     }
 
-    .btn-danger {
-        background-color: #da1a2d;
-        border: none;
-    }
-
-    .btn-danger:hover {
-        background-color: #bd2130;
+    .no-classes {
+        text-align: center;
+        font-size: 1.2em;
+        color: #666;
     }
 </style>
 {% endblock content %}

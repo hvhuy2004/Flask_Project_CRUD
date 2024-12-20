@@ -1,0 +1,155 @@
+{% extends "user/layout.html" %}
+
+{% block content %}
+<div class="wrapper">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="alert-container">
+        {% for category, message in messages %}
+        <div class="alert alert-{{category}} text-center">
+            <strong>{{message}}</strong>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="content">
+        <div>
+            <h2>📋 Available Classes:</h2>
+        </div>
+
+        {% if classes %}
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Class Name</th>
+                        <th>Subject</th>
+                        <th style="width:150px">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for class_info, subject_name, is_registered in classes %}
+                    <tr>
+                        <td>{{ class_info.name }}</td>
+                        <td>{{ subject_name }}</td>
+                        <td class="text-center">
+                            {% if is_registered %}
+                            <!-- Hiển thị nút Unregister nếu đã đăng ký nhưng chưa được duyệt -->
+                            <form action="{{ url_for('unregister_class', class_id=class_info.id_class) }}"
+                                method="POST">
+                                <button type="submit" class="btn btn-danger btn-sm"> Unregister</button>
+                            </form>
+                            {% else %}
+                            <!-- Hiển thị nút Register nếu chưa đăng ký -->
+                            <form action="{{ url_for('register_class', class_id=class_info.id_class) }}" method="POST">
+                                <button type="submit" class="btn btn-success btn-sm"> Register</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+
+            </table>
+        </div>
+        {% else %}
+        <div class="no-classes">
+            <p>No available classes to register.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    /* Reset body to avoid default margins */
+    body {
+        margin: 0;
+        padding: 0;
+        background: #f9f9f9;
+    }
+
+    .wrapper {
+        width: 90%;
+        max-width: 1200px;
+        margin: 20px auto;
+        padding: 20px;
+        background: #ffffff;
+        box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+    }
+
+    .content {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .header {
+        text-align: center;
+    }
+
+    .header h2 {
+        font-size: 24px;
+        font-weight: bold;
+    }
+
+    .alert-container {
+        margin-bottom: 20px;
+    }
+
+    .table-container {
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    table thead {
+        background: #007bff;
+        color: white;
+    }
+
+    table th,
+    table td {
+        padding: 10px;
+        text-align: center;
+        border: 1px solid #ddd;
+    }
+
+    .btn {
+        font-size: 14px;
+        padding: 8px 12px;
+        border-radius: 5px;
+        transition: background-color 0.3s ease;
+    }
+
+    .btn-success {
+        background-color: #157200;
+        border: none;
+        color: white;
+    }
+
+    .btn-success:hover {
+        background-color: #00460e;
+    }
+
+    .no-classes {
+        text-align: center;
+        color: #555;
+        font-size: 16px;
+        padding: 20px;
+        background-color: #f8f9fa;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+    }
+</style>
+{% endblock content %}

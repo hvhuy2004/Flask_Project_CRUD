@@ -1,0 +1,33 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="container">
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <div class="alert alert-success">
+        <strong> {{ messages[0] }}</strong>
+    </div>
+    {% endif %}
+    {% endwith %}
+    <div class="card">
+        <div class="card-body">
+            <form action="" method="POST">
+
+                <div class="form-group mb-3">
+                    <label><b>Choose Student</b></label>
+                    <select name="student_id" class="form-control" required>
+                        <option value="" disabled selected>Select a student</option>
+                        {% for student in students %}
+                        <option value="{{ student.id }}">{{ student.fname }} {{ student.lname }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-success d-block mx-auto" style="width: 50%;">Add Student</button>
+            </form>
+            <div class="text-right">
+                <a href="javascript:history.back()" class="btn btn-secondary btn-sm">Back</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
