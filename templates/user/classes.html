@@ -31,7 +31,8 @@
                     </div>
                 </div>
                 <div class="class-actions">
-                    <a href="{{ url_for('class_students', class_id=class.id_class) }}" class="btn btn-info">See All Students</a>
+                    <a href="{{ url_for('class_students', class_id=class.id_class) }}" class="btn btn-info">See All
+                        Students</a>
                 </div>
             </div>
             {% else %}
@@ -130,10 +131,24 @@
         background-color: #117a8b;
     }
 
+    .btn-danger {
+        background-color: #da1a2d;
+        border: none;
+    }
+
+    .btn-danger:hover {
+        background-color: #bd2130;
+    }
+
     .no-classes {
         text-align: center;
         font-size: 1.2em;
         color: #666;
+    }
+
+    .detail-row .label {
+        margin-right: 10px;
+        /* Thêm khoảng trống giữa label và value */
     }
 </style>
 {% endblock content %}

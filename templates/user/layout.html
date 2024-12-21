@@ -18,29 +18,47 @@
             // Lấy tất cả các liên kết trong navbar
             const navLinks = document.querySelectorAll('.list-group-item');
 
+            // Loại bỏ phần tử cuối (Logout)
+            const linksToConsider = Array.from(navLinks).slice(0, navLinks.length - 1);
+
             // Lấy đường dẫn hiện tại
             const currentUrl = window.location.pathname;
 
-            // Lặp qua các liên kết và so sánh đường dẫn
-            navLinks.forEach(link => {
-                if (link.getAttribute('href') === currentUrl) {
+            // Kiểm tra nếu có biến index đã được lưu trong localStorage
+            const savedIndex = localStorage.getItem('activeIndex');
+
+            // Nếu có giá trị savedIndex, set thẻ tương ứng là active, nếu không set thẻ đầu tiên là active
+            const indexToActivate = (savedIndex !== null && savedIndex < linksToConsider.length) ? savedIndex : 0;
+            linksToConsider[indexToActivate].classList.add('active');
+
+            // Lặp qua các liên kết và xử lý click để lưu lại index
+            linksToConsider.forEach((link, index) => {
+                // Kiểm tra nếu đường dẫn của liên kết khớp với đường dẫn hiện tại
+                if (index == indexToActivate) {
                     link.classList.add('active');
                 } else {
                     link.classList.remove('active');
                 }
+
+                // Lưu lại index khi người dùng click vào liên kết
+                link.addEventListener('click', () => {
+                    // Loại bỏ active khỏi tất cả các liên kết
+                    linksToConsider.forEach((item) => item.classList.remove('active'));
+                    // Thêm active cho liên kết được click
+                    link.classList.add('active');
+                    // Lưu lại index vào localStorage
+                    localStorage.setItem('activeIndex', index);
+                });
+            });
+
+            // Xử lý phần tử Logout (phần tử cuối)
+            const logoutLink = navLinks[navLinks.length - 1];
+            logoutLink.addEventListener('click', () => {
+                // Xóa localStorage khi nhấn Logout
+                localStorage.clear();
             });
         });
     </script>
-    <style>
-        .btn-danger {
-            background-color: #da1a2d;
-            border: none;
-        }
-
-        .btn-danger:hover {
-            background-color: #bd2130;
-        }
-    </style>
 </head>
 
 <body>
