@@ -24,7 +24,9 @@
             <table class="table">
                 <thead>
                     <tr>
+                        <th>Avatar</th>
                         <th>Student Code</th>
+
                         <th>First Name</th>
                         <th>Last Name</th>
                         <th>Birth Year</th>
@@ -34,6 +36,16 @@
                 <tbody>
                     {% for student in students %}
                     <tr>
+
+                        <td>
+                            {% if student.avatar %}
+                            <img src="{{ url_for('uploaded_file', filename=student.avatar) }}" alt="Avatar"
+                                class="avatar-img">
+                            {% else %}
+                            <img src="https://img.icons8.com/ios/452/user.png" alt="Default Avatar" class="avatar-img">
+
+                            {% endif %}
+                        </td>
                         <td>{{ student.student_code }}</td>
                         <td>{{ student.fname }}</td>
                         <td>{{ student.lname }}</td>
@@ -147,6 +159,13 @@
         background-color: #f8f9fa;
         border: 1px solid #ddd;
         border-radius: 10px;
+    }
+
+    .avatar-img {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        object-fit: cover;
     }
 </style>
 {% endblock content %}

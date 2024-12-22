@@ -7,6 +7,9 @@ from werkzeug.utils import secure_filename
 import os
 import uuid
 from datetime import datetime
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png'}
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///ums.sqlite"
@@ -256,43 +259,53 @@ def userUpdateProfile():
         return redirect('/')
 
     if request.method == 'POST':
-        # Get form data
+        # Lấy dữ liệu từ form
         fname = request.form.get('fname')
         lname = request.form.get('lname')
         email = request.form.get('email')
-        birth_year = request.form.get('birth_year')  # Dạng chuỗi từ form
+        birth_year = request.form.get('birth_year')
         student_code = request.form.get('student_code')
         username = request.form.get('username')
-        
-        # Chuyển birth_year thành date
+        avatar_file = request.files.get('avatar')  # Lấy file avatar từ form
+
+        # Chuyển birth_year thành kiểu date
         if birth_year:
             try:
-                birth_year_date = datetime.strptime(birth_year, '%Y-%m-%d').date()  # Chuyển chuỗi thành date
+                birth_year_date = datetime.strptime(birth_year, '%Y-%m-%d').date()
             except ValueError:
                 flash("Invalid date format. Please use YYYY-MM-DD.", "danger")
                 return redirect('/user/update-profile')
         else:
-            birth_year_date = None  # Không có giá trị nào được nhập
+            birth_year_date = None
 
         # Kiểm tra các trường bắt buộc
         if not all([fname, lname, email, username]):
             flash('Please fill all the fields', 'danger')
             return redirect('/user/update-profile')
 
-        # Cập nhật vào cơ sở dữ liệu
+        # Xử lý và lưu file ảnh
+        if avatar_file and allowed_file(avatar_file.filename):
+            filename = secure_filename(avatar_file.filename)
+            file_path = os.path.join(UPLOAD_FOLDER, filename)
+            avatar_file.save(file_path)  # Lưu file vào thư mục uploads
+            user.avatar = filename  # Lưu tên file vào cơ sở dữ liệu
+        elif avatar_file:
+            flash("Invalid file type. Only JPG, JPEG, and PNG are allowed.", "danger")
+            return redirect('/user/update-profile')
+
+        # Cập nhật các trường khác vào cơ sở dữ liệu
         user.fname = fname
         user.lname = lname
         user.email = email
         user.username = username
-        user.birth_year = birth_year_date  # Lưu giá trị date
+        user.birth_year = birth_year_date
         user.student_code = student_code
 
         db.session.commit()
         flash('Profile updated successfully', 'success')
         return redirect('/user/update-profile')
-    
-    return render_template('user/update-profile.html', title="Update Profile", users=user)
 
+    return render_template('user/update-profile.html', title="Update Profile", users=user)
     
 # người dùng xem lớp của mình
 @app.route('/user/classes/<int:user_id>', methods=['GET'])
@@ -706,6 +719,9 @@ def process_request(request_id):
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory('uploads', filename)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 if __name__ == '__main__':
     app.run(debug=True)
