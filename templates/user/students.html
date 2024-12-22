@@ -37,7 +37,7 @@
                         <td>{{ student.student_code }}</td>
                         <td>{{ student.fname }}</td>
                         <td>{{ student.lname }}</td>
-                        <td>{{ student.birth_year }}</td>
+                        <td>{{ student.birth_year.strftime('%d-%m-%Y') }}</td>
                         <td>{{ student.email }}</td>
                     </tr>
                     {% endfor %}
