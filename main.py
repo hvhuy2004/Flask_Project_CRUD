@@ -1,8 +1,11 @@
-from flask import Flask, render_template, request, flash, redirect, session
+from flask import Flask, render_template, request, flash, redirect, session, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_session import Session
 from flask_bcrypt import Bcrypt
 from sqlalchemy import or_
+from werkzeug.utils import secure_filename
+import os
+import uuid
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///ums.sqlite"
@@ -26,9 +29,10 @@ class User(db.Model):
     role = db.Column(db.String(50), default='user', nullable=False)  # Thêm cột role
     status = db.Column(db.Integer, default=0, nullable=False)
     id_class = db.Column(db.Integer, db.ForeignKey('class.id_class'), nullable=True)
+    avatar = db.Column(db.String(255), nullable=True)  # Thêm cột avatar
 
     def __repr__(self):
-        return f'User("{self.id}", "{self.fname}", "{self.lname}", "{self.email}", "{self.username}", "{self.role}", "{self.status}", "{self.student_code}", "{self.birth_year}")'
+        return f'User("{self.id}", "{self.fname}", "{self.lname}", "{self.email}", "{self.username}", "{self.role}", "{self.status}", "{self.student_code}", "{self.birth_year}", "{self.avatar}")'
 
 # Class class
 class Class(db.Model):
@@ -204,6 +208,13 @@ def userChangePassword():
         return render_template('user/change-password.html', title="Change Password")
 
 
+def generate_filename(filename):
+    # Lấy phần mở rộng của file
+    ext = os.path.splitext(filename)[1]
+    # Tạo tên file mới bằng UUID
+    new_filename = f"{uuid.uuid4().hex}{ext}"
+    return new_filename
+
 @app.route('/user/update-profile', methods=['POST', 'GET'])
 def userUpdateProfile():
     if not session.get('user_id'):
@@ -215,21 +226,34 @@ def userUpdateProfile():
     if user.role != "user":
         flash("Access denied: You are not authorized to access this page.", "danger")
         return redirect('/')
-    
+
     if request.method == 'POST':
-        # Get all input fields
+        # Lấy dữ liệu từ form
         fname = request.form.get('fname')
         lname = request.form.get('lname')
         email = request.form.get('email')
         birth_year = request.form.get('birth_year')
         student_code = request.form.get('student_code')
         username = request.form.get('username')
-        # Check if all fields are filled
+
+        # Kiểm tra file avatar
+        avatar = request.files.get('avatar')
+        if avatar:
+            # Lưu avatar vào thư mục uploads
+            avatar_filename = generate_filename(avatar.filename)
+            avatar_path = os.path.join('uploads', avatar_filename)
+            avatar.save(avatar_path)
+            user.avatar = avatar_filename
         if not all([fname, lname, email, username]):
             flash('Please fill all the fields', 'danger')
             return redirect('/user/update-profile')
         else:
-            User.query.filter_by(id=user.id).update(dict(fname=fname, lname=lname, email=email, username=username, birth_year=birth_year, student_code=student_code))
+            user.fname = fname
+            user.lname = lname
+            user.email = email
+            user.username = username
+            user.birth_year = birth_year
+            user.student_code = student_code
             db.session.commit()
             flash('Profile updated successfully', 'success')
             return redirect('/user/update-profile')
@@ -643,6 +667,11 @@ def process_request(request_id):
 
     db.session.commit()
     return redirect('/admin/registration_requests')
+
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory('uploads', filename)
 
 if __name__ == '__main__':
     app.run(debug=True)
