@@ -15,7 +15,7 @@
     {% endwith %}
 
     <div class="content">
-        <div >
+        <div>
             <h2>📋 Available Classes:</h2>
         </div>
 
@@ -30,18 +30,29 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for class_info, subject_name in classes %}
+                    {% for class_info, subject_name, is_registered in classes %}
                     <tr>
                         <td>{{ class_info.name }}</td>
                         <td>{{ subject_name }}</td>
                         <td class="text-center">
-                            <form action="{{ url_for('register_class', class_id=class_info.id_class) }}" method="POST">
-                                <button type="submit" class="btn btn-primary btn-sm">✅ Register</button>
+                            {% if is_registered %}
+                            <!-- Hiển thị nút Unregister nếu đã đăng ký nhưng chưa được duyệt -->
+                            <form action="{{ url_for('unregister_class', class_id=class_info.id_class) }}"
+                                method="POST">
+                                <button type="submit" class="btn btn-danger btn-sm"> Unregister</button>
                             </form>
+                            {% else %}
+                            <!-- Hiển thị nút Register nếu chưa đăng ký -->
+                            <form action="{{ url_for('register_class', class_id=class_info.id_class) }}" method="POST">
+                                <button type="submit" class="btn btn-success btn-sm"> Register</button>
+                            </form>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
+
+
             </table>
         </div>
         {% else %}
@@ -121,14 +132,28 @@
         transition: background-color 0.3s ease;
     }
 
-    .btn-primary {
-        background-color: #007bff;
+
+
+    .btn-success {
+        background-color: #28a745;
         border: none;
+        padding: 10px 20px;
         color: white;
+        border-radius: 5px;
+        cursor: pointer;
     }
 
-    .btn-primary:hover {
-        background-color: #0056b3;
+    .btn-success:hover {
+        background-color: #218838;
+    }
+
+    .btn-danger {
+        background-color: #da1a2d;
+        border: none;
+    }
+
+    .btn-danger:hover {
+        background-color: #bd2130;
     }
 
     .no-classes {

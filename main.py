@@ -274,16 +274,34 @@ def available_classes():
 
     user_id = session.get('user_id')
 
-    # Lấy danh sách lớp mà user chưa đăng ký
-    subquery = db.session.query(Student_Class.class_id).filter(Student_Class.user_id == user_id)
-
-    # Truy vấn lớp chưa đăng ký và lấy tên môn học cùng với lớp
-    available_classes = db.session.query(Class, Subject.name.label('subject_name')) \
-        .outerjoin(Subject, Class.id_subject == Subject.id_subject) \
-        .filter(Class.id_class.notin_(subquery)) \
+    # Lấy danh sách các lớp mà sinh viên đã đăng ký và trạng thái duyệt
+    registered_classes = db.session.query(Student_Class.class_id, Student_Class.status) \
+        .filter(Student_Class.user_id == user_id) \
         .all()
 
-    return render_template('user/available_classes.html', classes=available_classes)
+    # Truy vấn tất cả các lớp và môn học liên quan
+    available_classes = db.session.query(Class, Subject.name.label('subject_name')) \
+        .outerjoin(Subject, Class.id_subject == Subject.id_subject) \
+        .all()
+
+    # Đánh dấu trạng thái đăng ký
+    class_list = []
+    registered_dict = {c: status for c, status in registered_classes}  # Chuyển thành dict để tra cứu nhanh
+
+    for class_info, subject_name in available_classes:
+        if class_info.id_class in registered_dict:  # Nếu đã đăng ký
+            if registered_dict[class_info.id_class] == 0:  # Trạng thái chưa duyệt
+                is_registered = True
+            else:  # Trạng thái đã duyệt, bỏ qua
+                continue
+        else:  # Nếu chưa đăng ký
+            is_registered = False
+
+        # Thêm vào danh sách
+        class_list.append((class_info, subject_name, is_registered))
+
+    return render_template('user/available_classes.html', classes=class_list)
+
 
 
 @app.route('/user/classes/register/<int:class_id>', methods=['POST'])
@@ -304,8 +322,29 @@ def register_class(class_id):
     new_registration = Student_Class(user_id=user_id, class_id=class_id)
     db.session.add(new_registration)
     db.session.commit()
-    flash("Class registration request sent. Please wait for admin approval.", "success")
+    flash("Class registration successful.", "success")
     return redirect('/user/classes/available')
+
+
+@app.route('/user/classes/unregister/<int:class_id>', methods=['POST'])
+def unregister_class(class_id):
+    if not session.get('user_id'):
+        flash("You need to log in to unregister from a class.", "danger")
+        return redirect('/')
+
+    user_id = session.get('user_id')
+
+    # Tìm đăng ký và xóa
+    existing_registration = Student_Class.query.filter_by(user_id=user_id, class_id=class_id).first()
+    if not existing_registration:
+        flash("You are not registered for this class.", "warning")
+        return redirect('/user/classes/available')
+
+    db.session.delete(existing_registration)
+    db.session.commit()
+    flash("Unregistered from class successfully.", "success")
+    return redirect('/user/classes/available')
+
 
 
 # -------------------admin area-------------------
