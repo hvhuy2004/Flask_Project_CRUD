@@ -1,6 +1,13 @@
 {% extends "admin/layout.html" %}
 
 {% block content %}
+
+
+<script>
+    localStorage.clear()
+</script>
+
+
 <div class="wrapper">
     {% with messages = get_flashed_messages() %}
     {% if messages %}
