@@ -19,6 +19,7 @@
             <table class="table">
                 <thead>
                     <tr>
+                        <th>Avatar</th>
                         <th>Student Name</th>
                         <th>Class Name</th>
                         <th>Subject</th>
@@ -28,6 +29,15 @@
                 <tbody>
                     {% for request, user, class_info, subject_info in requests %}
                     <tr>
+                        <td>
+                            {% if user.avatar %}
+                            <img src="{{ url_for('uploaded_file', filename=user.avatar) }}" alt="Avatar"
+                                class="avatar-img">
+                            {% else %}
+                            <img src="https://img.icons8.com/ios/452/user.png" alt="Default Avatar" class="avatar-img">
+
+                            {% endif %}
+                        </td>
                         <td>{{ user.fname }} {{ user.lname }}</td>
                         <td>{{ class_info.name }}</td>
                         <td>{{ subject_info.name }}</td>
@@ -138,6 +148,13 @@
         font-size: 14px;
         width: 80%;
         /* Làm dài thanh tìm kiếm */
+    }
+
+    .avatar-img {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        object-fit: cover;
     }
 </style>
 {% endblock content %}

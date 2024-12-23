@@ -1,8 +1,15 @@
-from flask import Flask, render_template, request, flash, redirect, session
+from flask import Flask, render_template, request, flash, redirect, session, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_session import Session
 from flask_bcrypt import Bcrypt
 from sqlalchemy import or_
+from werkzeug.utils import secure_filename
+import os
+import uuid
+from datetime import datetime
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png'}
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///ums.sqlite"
@@ -20,15 +27,26 @@ class User(db.Model):
     lname = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(255), nullable=False)
     student_code = db.Column(db.String(50), nullable=True)  
-    birth_year = db.Column(db.Integer, nullable=True)       
+    birth_year = db.Column(db.Date, nullable=True)       
     username = db.Column(db.String(255), nullable=False)
     password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(50), default='user', nullable=False)  # Thêm cột role
     status = db.Column(db.Integer, default=0, nullable=False)
     id_class = db.Column(db.Integer, db.ForeignKey('class.id_class'), nullable=True)
+    avatar = db.Column(db.String(255), nullable=True)  # Thêm cột avatar
+
+    def generate_student_code(self):
+        current_year = datetime.now().year
+        year_suffix = str(current_year)[2:]  # Lấy 2 chữ số cuối của năm
+        max_id = db.session.query(User.id).order_by(User.id.desc()).first()
+        student_count = max_id[0] + 1 if max_id else 1
+        batch_number = (student_count // 10000) + 100  # Mỗi 10.000 sinh viên, mã số sẽ tăng thêm 1
+        student_number = student_count % 10000  # Số thứ tự sinh viên, bắt đầu từ 0000
+        student_code = f"{batch_number:03}{year_suffix}{student_number:04}"
+        return student_code
 
     def __repr__(self):
-        return f'User("{self.id}", "{self.fname}", "{self.lname}", "{self.email}", "{self.username}", "{self.role}", "{self.status}", "{self.student_code}", "{self.birth_year}")'
+        return f'User("{self.id}", "{self.fname}", "{self.lname}", "{self.email}", "{self.username}", "{self.role}", "{self.status}", "{self.student_code}", "{self.birth_year}", "{self.avatar}")'
 
 # Class class
 class Class(db.Model):
@@ -102,44 +120,60 @@ def userIndex():
 
 
 
+
+
 # User register
 @app.route('/user/signup', methods=['POST', 'GET'])
 def userSignup():
     if session.get('user_id'):
         return redirect('/user/dashboard')
+
     if request.method == 'POST':
         # Get all input fields
         fname = request.form.get('fname')
         lname = request.form.get('lname')
         birth_year = request.form.get('birth_year')
-        student_code = request.form.get('student_code')
         email = request.form.get('email')
         username = request.form.get('username')
         password = request.form.get('password')
+
         # Check if all fields are filled
-        if not all([fname, lname, email, password, username, birth_year, student_code]):
+        if not all([fname, lname, email, password, username, birth_year]):
             flash('Please fill all the fields', 'danger')
             return redirect('/user/signup')
-        else:
-            # Check if the email already exists
-            is_username = User.query.filter_by(username=username).first()
-            is_studentcode = User.query.filter_by(student_code=student_code).first()
-            if is_username:
-                flash('Username already exists', 'danger')
-                return redirect('/user/signup')
-            elif is_studentcode:
-                flash('Student code already exists', 'danger')
-                return redirect('/user/signup')
-            else:
-                # Hash the password and create a new user
-                hash_password = bcrypt.generate_password_hash(password, 10).decode('utf-8')
-                user = User(fname=fname, lname=lname, email=email,birth_year=birth_year, student_code = student_code, password=hash_password, username=username)
-                db.session.add(user)
-                db.session.commit()
-                flash('Account created successfully! Admin will approve your account.', 'success')
-                return redirect('/')
-    else:
-        return render_template('/signup.html', title="User Signup")
+
+        # Convert birth_year to date
+        try:
+            birth_year_date = datetime.strptime(birth_year, '%Y-%m-%d').date()
+        except ValueError:
+            flash('Invalid date format for birth year. Please use YYYY-MM-DD.', 'danger')
+            return redirect('/user/signup')
+
+        # Check if the email or username already exists
+        is_username = User.query.filter_by(username=username).first()
+        if is_username:
+            flash('Username already exists', 'danger')
+            return redirect('/user/signup')
+
+        # Generate student code
+        new_user = User(fname=fname, lname=lname, email=email, username=username, password=password)
+        new_user.birth_year = birth_year_date  # Set the birth year
+
+        # Sinh mã số sinh viên tự động
+        new_user.student_code = new_user.generate_student_code()
+
+        # Hash the password
+        hash_password = bcrypt.generate_password_hash(password, 10).decode('utf-8')
+        new_user.password = hash_password  # Set hashed password
+
+        # Add the new user to the database
+        db.session.add(new_user)
+        db.session.commit()
+
+        flash('Account created successfully! Admin will approve your account.', 'success')
+        return redirect('/')
+    return render_template('/signup.html', title="User Signup")
+
 
 
 # User dashboard
@@ -204,37 +238,74 @@ def userChangePassword():
         return render_template('user/change-password.html', title="Change Password")
 
 
+def generate_filename(filename):
+    # Lấy phần mở rộng của file
+    ext = os.path.splitext(filename)[1]
+    # Tạo tên file mới bằng UUID
+    new_filename = f"{uuid.uuid4().hex}{ext}"
+    return new_filename
+
+from datetime import datetime
+
 @app.route('/user/update-profile', methods=['POST', 'GET'])
 def userUpdateProfile():
     if not session.get('user_id'):
         return redirect('/')
-    
+
     user = User.query.get(session.get('user_id'))
-    
-    # Kiểm tra nếu role là "user"
+
     if user.role != "user":
         flash("Access denied: You are not authorized to access this page.", "danger")
         return redirect('/')
-    
+
     if request.method == 'POST':
-        # Get all input fields
+        # Lấy dữ liệu từ form
         fname = request.form.get('fname')
         lname = request.form.get('lname')
         email = request.form.get('email')
         birth_year = request.form.get('birth_year')
         student_code = request.form.get('student_code')
         username = request.form.get('username')
-        # Check if all fields are filled
+        avatar_file = request.files.get('avatar')  # Lấy file avatar từ form
+
+        # Chuyển birth_year thành kiểu date
+        if birth_year:
+            try:
+                birth_year_date = datetime.strptime(birth_year, '%Y-%m-%d').date()
+            except ValueError:
+                flash("Invalid date format. Please use YYYY-MM-DD.", "danger")
+                return redirect('/user/update-profile')
+        else:
+            birth_year_date = None
+
+        # Kiểm tra các trường bắt buộc
         if not all([fname, lname, email, username]):
             flash('Please fill all the fields', 'danger')
             return redirect('/user/update-profile')
-        else:
-            User.query.filter_by(id=user.id).update(dict(fname=fname, lname=lname, email=email, username=username, birth_year=birth_year, student_code=student_code))
-            db.session.commit()
-            flash('Profile updated successfully', 'success')
+
+        # Xử lý và lưu file ảnh
+        if avatar_file and allowed_file(avatar_file.filename):
+            filename = secure_filename(avatar_file.filename)
+            file_path = os.path.join(UPLOAD_FOLDER, filename)
+            avatar_file.save(file_path)  # Lưu file vào thư mục uploads
+            user.avatar = filename  # Lưu tên file vào cơ sở dữ liệu
+        elif avatar_file:
+            flash("Invalid file type. Only JPG, JPEG, and PNG are allowed.", "danger")
             return redirect('/user/update-profile')
-    else:
-        return render_template('user/update-profile.html', title="Update Profile", users=user)
+
+        # Cập nhật các trường khác vào cơ sở dữ liệu
+        user.fname = fname
+        user.lname = lname
+        user.email = email
+        user.username = username
+        user.birth_year = birth_year_date
+        user.student_code = student_code
+
+        db.session.commit()
+        flash('Profile updated successfully', 'success')
+        return redirect('/user/update-profile')
+
+    return render_template('user/update-profile.html', title="Update Profile", users=user)
     
 # người dùng xem lớp của mình
 @app.route('/user/classes/<int:user_id>', methods=['GET'])
@@ -643,6 +714,14 @@ def process_request(request_id):
 
     db.session.commit()
     return redirect('/admin/registration_requests')
+
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory('uploads', filename)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 if __name__ == '__main__':
     app.run(debug=True)

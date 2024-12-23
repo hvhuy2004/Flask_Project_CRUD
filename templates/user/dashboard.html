@@ -3,7 +3,7 @@
 {% block content %}
 
 <script>
-    localStorage.clear()
+    localStorage.clear();
 </script>
 
 <div class="wrapper">
@@ -23,21 +23,32 @@
         </div>
 
         <div class="student-details">
-            <div class="detail-row">
-                <span class="label">Student Code:</span>
-                <span class="value">{{ users.student_code }}</span>
-            </div>
-            <div class="detail-row">
-                <span class="label">First Name:</span>
-                <span class="value">{{ users.fname }}</span>
-            </div>
-            <div class="detail-row">
-                <span class="label">Last Name:</span>
-                <span class="value">{{ users.lname }}</span>
+            <div class="details-first-row">
+                <div class="avatar-container">
+                    {% if users.avatar %}
+                        <img src="{{ url_for('uploaded_file', filename=users.avatar) }}"  alt="Avatar" class="avatar">
+                    {% else %}
+                        <img src="https://img.icons8.com/ios/452/user.png" alt="Avatar" class="avatar-default">
+                    {% endif %}
+                </div>
+                <div class="student-details-child">
+                    <div class="detail-row">
+                        <span class="label">Student Code:</span>
+                        <span class="value">{{ users.student_code }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">First Name:</span>
+                        <span class="value">{{ users.fname }}</span>
+                    </div>
+                    <div class="detail-row-not-last">
+                        <span class="label">Last Name:</span>
+                        <span class="value">{{ users.lname }}</span>
+                    </div>
+                </div>
             </div>
             <div class="detail-row">
                 <span class="label">Birth Year:</span>
-                <span class="value">{{ users.birth_year }}</span>
+                <span class="value">{{ users.birth_year.strftime('%d-%m-%Y') }}</span>
             </div>
             <div class="detail-row">
                 <span class="label">Username:</span>
@@ -93,7 +104,54 @@
         box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.1);
     }
 
+    .student-details-child {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        background: #fefefe;
+        border-radius: 10px;
+        flex-grow: 1; /* Cho phép mở rộng chiếm không gian còn lại */
+    }
+
+
+    .details-first-row {
+        display: flex;
+        align-items: center;
+        padding: 10px 0 0 0;
+        width: 100%;
+    }
+
+    .avatar-container {
+        width: 172px;
+        height: 172px;
+        overflow: hidden;
+        border: 2px solid #ddd;
+        position: relative;
+        margin-right: 20px;
+    }
+
+    .avatar {
+        width: 100%;
+        height: 100%;
+        object-fit: scale-down;
+    }
+
+    .avatar-default {
+        width: 100%;
+        height: 100%;
+        object-fit: scale-down;
+        background-color: #ddd;
+    }
+
     .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .detail-row-not-last {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -139,4 +197,5 @@
         background-color: #bd2130;
     }
 </style>
+
 {% endblock content %}

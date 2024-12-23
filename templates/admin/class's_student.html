@@ -22,6 +22,7 @@
                     <thead>
                         <tr>
                             <th>Id</th>
+                            <th>Avatar</th>
                             <th>First Name</th>
                             <th>Last Name</th>
                             <th>Birth Year</th>
@@ -36,9 +37,19 @@
                         {% for user, relative_id in users %}
                         <tr>
                             <td>{{ user.id }}</td>
+                            <td>
+                                {% if user.avatar %}
+                                <img src="{{ url_for('uploaded_file', filename=user.avatar) }}" alt="Avatar"
+                                    class="avatar-img">
+                                {% else %}
+                                <img src="https://img.icons8.com/ios/452/user.png" alt="Default Avatar"
+                                    class="avatar-img">
+
+                                {% endif %}
+                            </td>
                             <td>{{ user.fname }}</td>
                             <td>{{ user.lname }}</td>
-                            <td>{{ user.birth_year }}</td>
+                            <td>{{ user.birth_year.strftime('%d-%m-%Y') }}</td>
                             <td>{{ user.student_code }}</td>
                             <td>{{ user.username }}</td>
                             <td>{{ user.email }}</td>
@@ -170,6 +181,13 @@
         padding: 8px;
         font-size: 14px;
         width: 80%;
+    }
+
+    .avatar-img {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        object-fit: cover;
     }
 </style>
 {% endblock content %}
