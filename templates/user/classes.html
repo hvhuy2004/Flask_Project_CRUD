@@ -35,11 +35,17 @@
                         Students</a>
                 </div>
             </div>
+
             {% else %}
             <div class="no-classes">
                 <p>No classes found.</p>
             </div>
+
+
             {% endfor %}
+            <div class="text-right">
+                <a href="javascript:history.back()" class="btn btn-secondary btn-sm">Back</a>
+            </div>
         </div>
     </div>
 </div>
